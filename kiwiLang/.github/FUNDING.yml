@@ -1,0 +1,180 @@
+# These are supported funding model platforms
+
+github: kiwiLanglang
+patreon: kiwiLanglang
+open_collective: kiwiLanglang
+ko_fi: kiwiLanglang
+tidelift: packages/github/kiwiLanglang/kiwiLang
+community_bridge: kiwiLang
+liberapay: kiwiLang
+issuehunt: kiwiLanglang/kiwiLang
+otechie: kiwiLang
+custom: ['https://kiwiLanglang.org/donate', 'https://opencollective.com/kiwiLanglang']
+
+# Funding platform specific configurations
+platforms:
+  github:
+    sponsors: true
+    memberships: true
+  patreon:
+    show_amounts: true
+    tiers:
+      - $5/month - Supporter
+      - $10/month - Backer
+      - $25/month - Sponsor
+      - $100/month - Champion
+  open_collective:
+    show_amounts: true
+    types:
+      - BACKER
+      - SPONSOR
+      - ORGANIZATION
+  ko_fi:
+    show_amounts: true
+    page_type: 'default'
+  tidelift:
+    package_manager: 'github'
+  community_bridge:
+    show_amounts: true
+    project_type: 'development'
+  liberapay:
+    show_amounts: true
+  issuehunt:
+    show_amounts: true
+  otechie:
+    show_amounts: true
+
+# Repository-specific funding information
+funding_links:
+  - name: 'GitHub Sponsors'
+    url: 'https://github.com/sponsors/kiwiLanglang'
+    description: 'Monthly sponsorship through GitHub'
+  - name: 'Open Collective'
+    url: 'https://opencollective.com/kiwiLanglang'
+    description: 'Transparent funding for the community'
+  - name: 'Patreon'
+    url: 'https://patreon.com/kiwiLanglang'
+    description: 'Support us on Patreon'
+  - name: 'One-time Donation'
+    url: 'https://kiwiLanglang.org/donate'
+    description: 'Make a one-time donation'
+  - name: 'Corporate Sponsorship'
+    url: 'https://kiwiLanglang.org/sponsor'
+    description: 'Information for corporate sponsors'
+
+# How funds are used
+funds_usage:
+  - 'Core development and maintenance'
+  - 'Infrastructure costs (CI/CD, hosting)'
+  - 'Documentation and tutorials'
+  - 'Community events and outreach'
+  - 'Bounties for bugs and features'
+  - 'Security audits and reviews'
+
+# Sponsorship tiers
+sponsorship_tiers:
+  individual:
+    - name: 'Supporter'
+      amount: '$5/month'
+      benefits:
+        - 'Name in README'
+        - 'Early access to beta releases'
+        - 'Supporter role in Discord'
+    - name: 'Backer'
+      amount: '$10/month'
+      benefits:
+        - 'All Supporter benefits'
+        - 'Vote on feature priorities'
+        - 'Access to sponsor-only updates'
+    - name: 'Sponsor'
+      amount: '$25/month'
+      benefits:
+        - 'All Backer benefits'
+        - 'Logo on website'
+        - 'Priority issue support'
+
+  organization:
+    - name: 'Silver Sponsor'
+      amount: '$100/month'
+      benefits:
+        - 'Logo in README and website'
+        - 'Priority bug fixes'
+        - 'Quarterly update calls'
+    - name: 'Gold Sponsor'
+      amount: '$500/month'
+      benefits:
+        - 'All Silver benefits'
+        - 'Featured in release announcements'
+        - 'Direct line to core team'
+    - name: 'Platinum Sponsor'
+      amount: '$1000+/month'
+      benefits:
+        - 'All Gold benefits'
+        - 'Custom feature development'
+        - 'Co-marketing opportunities'
+
+# Recognition for sponsors
+sponsor_recognition:
+  readme: true
+  website: true
+  release_notes: true
+  documentation: true
+  social_media: true
+
+# Current sponsors (example structure)
+current_sponsors:
+  platinum:
+    - name: 'Example Corp'
+      logo: 'https://example.com/logo.png'
+      url: 'https://example.com'
+  gold:
+    - name: 'Awesome Inc'
+      logo: 'https://awesome.com/logo.png'
+      url: 'https://awesome.com'
+  silver:
+    - name: 'Cool Startup'
+      logo: 'https://coolstartup.com/logo.png'
+      url: 'https://coolstartup.com'
+  individual:
+    - name: 'John Doe'
+    - name: 'Jane Smith'
+    - name: 'Alex Johnson'
+
+# Transparency and governance
+transparency:
+  financial_reports: 'https://opencollective.com/kiwiLanglang/updates'
+  roadmap: 'https://github.com/kiwiLanglang/kiwiLang/projects/1'
+  decision_making: 'https://github.com/kiwiLanglang/kiwiLang/blob/main/GOVERNANCE.md'
+
+# Legal information
+legal:
+  fiscal_host: 'Open Source Collective'
+  tax_id: '46-2033585'
+  jurisdiction: 'United States'
+  terms: 'https://kiwiLanglang.org/terms'
+  privacy: 'https://kiwiLanglang.org/privacy'
+
+# Contact for sponsorship inquiries
+contact:
+  email: 'sponsor@kiwiLanglang.org'
+  discord: 'https://discord.gg/kiwiLang'
+  twitter: '@kiwiLanglang'
+
+# Special funding campaigns
+campaigns:
+  - name: 'Security Audit Fund'
+    goal: '$15,000'
+    current: '$8,500'
+    url: 'https://opencollective.com/kiwiLanglang/contribute/security-audit-12345'
+    description: 'Fund a comprehensive security audit by a professional firm'
+  - name: 'Windows ARM64 Support'
+    goal: '$5,000'
+    current: '$2,300'
+    url: 'https://opencollective.com/kiwiLanglang/contribute/windows-arm64-67890'
+    description: 'Add support for Windows on ARM64 architecture'
+
+# Acknowledgments
+acknowledgments:
+  - 'Thank you to all our sponsors and donors!'
+  - 'Special thanks to our early adopters and contributors.'
+  - 'This project would not be possible without community support.'

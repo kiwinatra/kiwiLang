@@ -1,0 +1,577 @@
+module mandelbrot;
+
+// Complex number type for Mandelbrot calculations
+struct Complex {
+    real: f64,
+    imag: f64,
+    
+    fn init(real: f64, imag: f64) -> Complex {
+        return Complex { real, imag };
+    }
+    
+    fn add(self, other: Complex) -> Complex {
+        return Complex::init(self.real + other.real, self.imag + other.imag);
+    }
+    
+    fn mul(self, other: Complex) -> Complex {
+        let real = self.real * other.real - self.imag * other.imag;
+        let imag = self.real * other.imag + self.imag * other.real;
+        return Complex::init(real, imag);
+    }
+    
+    fn abs_sq(self) -> f64 {
+        return self.real * self.real + self.imag * self.imag;
+    }
+    
+    fn to_string(self) -> string {
+        return self.real.toString() + " + " + self.imag.toString() + "i";
+    }
+}
+
+// Mandelbrot iteration for a single point
+fn mandelbrot_point(c: Complex, max_iter: i32) -> i32 {
+    let mut z = Complex::init(0.0, 0.0);
+    let mut iter = 0;
+    
+    while iter < max_iter && z.abs_sq() <= 4.0 {
+        z = z.mul(z).add(c);
+        iter += 1;
+    }
+    
+    return iter;
+}
+
+// Calculate Mandelbrot set for a region
+fn mandelbrot_set(
+    width: i32,
+    height: i32,
+    center_x: f64,
+    center_y: f64,
+    zoom: f64,
+    max_iter: i32
+) -> []i32 {
+    let mut result = []i32{};
+    result.resize(width * height, 0);
+    
+    let scale = 4.0 / (zoom * width as f64);
+    let aspect = height as f64 / width as f64;
+    
+    for y in 0..height {
+        let imag = center_y + (y as f64 - height as f64 / 2.0) * scale * aspect;
+        
+        for x in 0..width {
+            let real = center_x + (x as f64 - width as f64 / 2.0) * scale;
+            let c = Complex::init(real, imag);
+            
+            let iter = mandelbrot_point(c, max_iter);
+            result[y * width + x] = iter;
+        }
+    }
+    
+    return result;
+}
+
+// Julia set calculation
+fn julia_set(
+    width: i32,
+    height: i32,
+    c: Complex,
+    max_iter: i32
+) -> []i32 {
+    let mut result = []i32{};
+    result.resize(width * height, 0);
+    
+    let scale = 4.0 / width as f64;
+    let aspect = height as f64 / width as f64;
+    
+    for y in 0..height {
+        let imag = (y as f64 - height as f64 / 2.0) * scale * aspect;
+        
+        for x in 0..width {
+            let real = (x as f64 - width as f64 / 2.0) * scale;
+            let mut z = Complex::init(real, imag);
+            
+            let mut iter = 0;
+            while iter < max_iter && z.abs_sq() <= 4.0 {
+                z = z.mul(z).add(c);
+                iter += 1;
+            }
+            
+            result[y * width + x] = iter;
+        }
+    }
+    
+    return result;
+}
+
+// Color mapping functions
+struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+    
+    fn init(r: u8, g: u8, b: u8) -> Color {
+        return Color { r, g, b };
+    }
+    
+    fn to_hex(self) -> string {
+        return format("#{:02X}{:02X}{:02X}", self.r, self.g, self.b);
+    }
+}
+
+fn map_color(iter: i32, max_iter: i32) -> Color {
+    if iter == max_iter {
+        return Color::init(0, 0, 0); // Black for points inside set
+    }
+    
+    // Smooth coloring
+    let t = iter as f64 / max_iter as f64;
+    
+    // Different color palettes
+    let palette = 2; // Choose palette: 0=rainbow, 1=fire, 2=ocean
+    
+    match palette {
+        0 => {
+            // Rainbow palette
+            let r = (9.0 * (1.0 - t) * t * t * t * 255.0) as u8;
+            let g = (15.0 * (1.0 - t) * (1.0 - t) * t * t * 255.0) as u8;
+            let b = (8.5 * (1.0 - t) * (1.0 - t) * (1.0 - t) * t * 255.0) as u8;
+            return Color::init(r, g, b);
+        },
+        1 => {
+            // Fire palette
+            let r = (255.0 * sqrt(t)) as u8;
+            let g = (255.0 * t * t) as u8;
+            let b = (255.0 * t * t * t * t) as u8;
+            return Color::init(r, g, b);
+        },
+        2 => {
+            // Ocean palette
+            let r = (255.0 * (1.0 - t)) as u8;
+            let g = (255.0 * (1.0 - t * t)) as u8;
+            let b = (255.0 * (1.0 - t * t * t)) as u8;
+            return Color::init(r, g, b);
+        },
+        _ => return Color::init(255, 255, 255)
+    }
+}
+
+// Square root approximation
+fn sqrt(x: f64) -> f64 {
+    if x <= 0.0 {
+        return 0.0;
+    }
+    
+    // Babylonian method
+    let mut y = x;
+    let mut z = (y + 1.0) / 2.0;
+    
+    while abs(y - z) > 0.000001 {
+        y = z;
+        z = (y + x / y) / 2.0;
+    }
+    
+    return z;
+}
+
+fn abs(x: f64) -> f64 {
+    return if x < 0.0 { -x } else { x };
+}
+
+// Generate PPM image format
+fn generate_ppm(
+    data: []i32,
+    width: i32,
+    height: i32,
+    max_iter: i32,
+    filename: string
+) {
+    let file = open_file(filename, "w");
+    
+    // Write PPM header
+    write_line(file, "P3");
+    write_line(file, width.toString() + " " + height.toString());
+    write_line(file, "255");
+    
+    // Write pixel data
+    for y in 0..height {
+        for x in 0..width {
+            let iter = data[y * width + x];
+            let color = map_color(iter, max_iter);
+            
+            write(file, color.r.toString() + " ");
+            write(file, color.g.toString() + " ");
+            write(file, color.b.toString() + " ");
+        }
+        write_line(file, "");
+    }
+    
+    close_file(file);
+}
+
+// Generate PGM (grayscale) image
+fn generate_pgm(
+    data: []i32,
+    width: i32,
+    height: i32,
+    max_iter: i32,
+    filename: string
+) {
+    let file = open_file(filename, "w");
+    
+    // Write PGM header
+    write_line(file, "P2");
+    write_line(file, width.toString() + " " + height.toString());
+    write_line(file, "255");
+    
+    // Write pixel data
+    for y in 0..height {
+        for x in 0..width {
+            let iter = data[y * width + x];
+            let gray = if iter == max_iter {
+                0
+            } else {
+                (255.0 * (iter as f64 / max_iter as f64)) as u8
+            };
+            
+            write(file, gray.toString() + " ");
+        }
+        write_line(file, "");
+    }
+    
+    close_file(file);
+}
+
+// Interactive zoom and exploration
+struct Viewport {
+    center_x: f64,
+    center_y: f64,
+    zoom: f64,
+    width: i32,
+    height: i32,
+    max_iter: i32,
+    
+    fn init() -> Viewport {
+        return Viewport {
+            center_x: -0.5,
+            center_y: 0.0,
+            zoom: 1.0,
+            width: 800,
+            height: 600,
+            max_iter: 256
+        };
+    }
+    
+    fn zoom_in(self) -> Viewport {
+        return Viewport {
+            center_x: self.center_x,
+            center_y: self.center_y,
+            zoom: self.zoom * 1.5,
+            width: self.width,
+            height: self.height,
+            max_iter: self.max_iter
+        };
+    }
+    
+    fn zoom_out(self) -> Viewport {
+        return Viewport {
+            center_x: self.center_x,
+            center_y: self.center_y,
+            zoom: self.zoom / 1.5,
+            width: self.width,
+            height: self.height,
+            max_iter: self.max_iter
+        };
+    }
+    
+    fn move(self, dx: f64, dy: f64) -> Viewport {
+        let scale = 4.0 / (self.zoom * self.width as f64);
+        let aspect = self.height as f64 / self.width as f64;
+        
+        return Viewport {
+            center_x: self.center_x + dx * scale,
+            center_y: self.center_y + dy * scale * aspect,
+            zoom: self.zoom,
+            width: self.width,
+            height: self.height,
+            max_iter: self.max_iter
+        };
+    }
+    
+    fn render(self) -> []i32 {
+        return mandelbrot_set(
+            self.width,
+            self.height,
+            self.center_x,
+            self.center_y,
+            self.zoom,
+            self.max_iter
+        );
+    }
+}
+
+// Performance benchmarking
+fn benchmark_mandelbrot() {
+    println("=== Mandelbrot Performance Benchmark ===");
+    println("");
+    
+    let test_cases = [
+        (320, 240, 100),
+        (640, 480, 200),
+        (800, 600, 256),
+        (1024, 768, 300),
+        (1280, 720, 400)
+    ];
+    
+    let viewport = Viewport::init();
+    
+    for (width, height, max_iter) in test_cases {
+        println("Resolution: " + width.toString() + "x" + height.toString());
+        println("Max iterations: " + max_iter.toString());
+        
+        let start_time = get_time();
+        
+        let data = mandelbrot_set(
+            width,
+            height,
+            viewport.center_x,
+            viewport.center_y,
+            viewport.zoom,
+            max_iter
+        );
+        
+        let end_time = get_time();
+        let elapsed = end_time - start_time;
+        
+        let pixels = width * height;
+        let mpps = (pixels as f64 / 1_000_000.0) / elapsed;
+        
+        println("Time: " + elapsed.toString() + " seconds");
+        println("Performance: " + mpps.toString() + " million pixels/second");
+        println("");
+        
+        // Verify some points
+        let center_pixel = data[(height / 2) * width + (width / 2)];
+        println("  Center pixel iterations: " + center_pixel.toString());
+    }
+}
+
+// Main rendering function with multiple presets
+fn render_presets() {
+    println("Rendering Mandelbrot presets...");
+    
+    let presets = [
+        ("full_set", -0.5, 0.0, 1.0, 256),
+        ("seahorse_valley", -0.743, 0.126, 800.0, 512),
+        ("elephant_valley", 0.275, 0.0, 100.0, 256),
+        ("mini_set", -1.4, 0.0, 200.0, 512),
+        ("spiral", -0.761574, -0.0847596, 10000.0, 1024)
+    ];
+    
+    for (name, cx, cy, zoom, max_iter) in presets {
+        println("Rendering: " + name);
+        
+        let start_time = get_time();
+        let data = mandelbrot_set(800, 600, cx, cy, zoom, max_iter);
+        let end_time = get_time();
+        
+        let filename = name + ".ppm";
+        generate_ppm(data, 800, 600, max_iter, filename);
+        
+        println("  Saved to: " + filename);
+        println("  Time: " + (end_time - start_time).toString() + " seconds");
+        println("");
+    }
+}
+
+// Julia set exploration
+fn render_julia_presets() {
+    println("Rendering Julia set presets...");
+    
+    let julia_constants = [
+        ("julia1", Complex::init(-0.4, 0.6)),
+        ("julia2", Complex::init(-0.7269, 0.1889)),
+        ("julia3", Complex::init(-0.8, 0.156)),
+        ("julia4", Complex::init(0.285, 0.01)),
+        ("julia5", Complex::init(-0.70176, -0.3842))
+    ];
+    
+    for (name, c) in julia_constants {
+        println("Rendering: " + name);
+        
+        let start_time = get_time();
+        let data = julia_set(800, 600, c, 256);
+        let end_time = get_time();
+        
+        let filename = name + ".ppm";
+        generate_ppm(data, 800, 600, 256, filename);
+        
+        println("  Saved to: " + filename);
+        println("  Time: " + (end_time - start_time).toString() + " seconds");
+        println("");
+    }
+}
+
+// Animation generator
+fn generate_zoom_animation() {
+    println("Generating zoom animation...");
+    
+    let frames = 60;
+    let start_zoom = 1.0;
+    let end_zoom = 1000.0;
+    let cx = -0.743643887037151;
+    let cy = 0.13182590420533;
+    
+    for frame in 0..frames {
+        let t = frame as f64 / frames as f64;
+        let zoom = start_zoom * pow(2.0, t * log2(end_zoom / start_zoom));
+        
+        println("Frame " + (frame + 1).toString() + "/" + frames.toString() + 
+                " (zoom=" + zoom.toString() + ")");
+        
+        let data = mandelbrot_set(320, 240, cx, cy, zoom, 256);
+        let filename = "frame_" + format("{:04d}", frame) + ".pgm";
+        generate_pgm(data, 320, 240, 256, filename);
+    }
+    
+    println("Animation frames generated.");
+}
+
+// Mathematical functions
+fn pow(base: f64, exp: f64) -> f64 {
+    return exp(exp * ln(base));
+}
+
+fn exp(x: f64) -> f64 {
+    // Taylor series expansion
+    let mut sum = 1.0;
+    let mut term = 1.0;
+    
+    for i in 1..20 {
+        term *= x / i as f64;
+        sum += term;
+    }
+    
+    return sum;
+}
+
+fn ln(x: f64) -> f64 {
+    if x <= 0.0 {
+        return 0.0;
+    }
+    
+    // Simple approximation
+    let mut y = (x - 1.0) / (x + 1.0);
+    let mut result = y;
+    let y2 = y * y;
+    
+    for i in 1..10 {
+        y *= y2;
+        result += y / (2.0 * i as f64 + 1.0);
+    }
+    
+    return 2.0 * result;
+}
+
+fn log2(x: f64) -> f64 {
+    return ln(x) / ln(2.0);
+}
+
+// Format string with padding
+fn format(fmt: string, value: i32) -> string {
+    // Simple formatting for frame numbers
+    let str_val = value.toString();
+    let mut result = string{};
+    
+    let mut i = 0;
+    while i < fmt.size() {
+        if fmt[i] == '{' && i + 1 < fmt.size() && fmt[i + 1] == '}' {
+            result += str_val;
+            i += 2;
+        } else {
+            result.push(fmt[i]);
+            i += 1;
+        }
+    }
+    
+    return result;
+}
+
+// File I/O functions
+fn open_file(filename: string, mode: string) -> File {
+    extern "C" {
+        fn fopen(filename: *const i8, mode: *const i8) -> *mut File;
+    }
+    
+    return unsafe { fopen(filename.c_str(), mode.c_str()) };
+}
+
+fn write_line(file: File, text: string) {
+    extern "C" {
+        fn fputs(text: *const i8, file: *mut File) -> i32;
+    }
+    
+    unsafe {
+        fputs((text + "\n").c_str(), file);
+    }
+}
+
+fn write(file: File, text: string) {
+    extern "C" {
+        fn fputs(text: *const i8, file: *mut File) -> i32;
+    }
+    
+    unsafe {
+        fputs(text.c_str(), file);
+    }
+}
+
+fn close_file(file: File) {
+    extern "C" {
+        fn fclose(file: *mut File) -> i32;
+    }
+    
+    unsafe {
+        fclose(file);
+    }
+}
+
+// Timing function
+fn get_time() -> f64 {
+    extern "C" {
+        fn clock() -> i64;
+    }
+    
+    return unsafe { clock() } as f64 / CLOCKS_PER_SEC as f64;
+}
+
+const CLOCKS_PER_SEC: i64 = 1000000;
+
+// String to C string conversion
+fn c_str(s: string) -> *const i8 {
+    return s.data();
+}
+
+// Main benchmark entry point
+fn main() -> i32 {
+    println("KLang Mandelbrot Benchmark Suite");
+    println("================================");
+    println("");
+    
+    println("1. Performance Benchmark");
+    println("2. Render Presets");
+    println("3. Julia Sets");
+    println("4. Generate Animation");
+    println("");
+    
+    // For benchmarking, run all tests
+    benchmark_mandelbrot();
+    render_presets();
+    render_julia_presets();
+    generate_zoom_animation();
+    
+    println("");
+    println("All benchmarks completed!");
+    
+    return 0;
+}

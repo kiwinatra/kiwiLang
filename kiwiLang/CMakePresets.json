@@ -1,0 +1,383 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_CXX_STANDARD": "20",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+                "CMAKE_CXX_EXTENSIONS": "OFF",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "OFF"
+            },
+            "environment": {
+                "CC": "clang",
+                "CXX": "clang++"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug Configuration",
+            "description": "Debug build with all warnings and sanitizers",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror -g -fno-omit-frame-pointer -fno-optimize-sibling-calls",
+                "kiwiLang_ENABLE_SANITIZERS": "ON",
+                "kiwiLang_ENABLE_ASSERTIONS": "ON",
+                "kiwiLang_ENABLE_LOGGING": "ON",
+                "kiwiLang_ENABLE_COVERAGE": "OFF",
+                "kiwiLang_ENABLE_JIT": "OFF",
+                "kiwiLang_USE_LLVM": "OFF",
+                "BUILD_TESTING": "ON",
+                "BUILD_BENCHMARKS": "OFF",
+                "BUILD_EXAMPLES": "ON"
+            }
+        },
+        {
+            "name": "debug-asan",
+            "displayName": "Debug with ASAN",
+            "description": "Debug build with Address Sanitizer",
+            "inherits": "debug",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls"
+            }
+        },
+        {
+            "name": "debug-tsan",
+            "displayName": "Debug with TSAN",
+            "description": "Debug build with Thread Sanitizer",
+            "inherits": "debug",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror -g -fsanitize=thread -fno-omit-frame-pointer"
+            }
+        },
+        {
+            "name": "debug-msan",
+            "displayName": "Debug with MSAN",
+            "description": "Debug build with Memory Sanitizer",
+            "inherits": "debug",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror -g -fsanitize=memory -fno-omit-frame-pointer"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release Configuration",
+            "description": "Optimized release build",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CXX_FLAGS": "-O3 -DNDEBUG -march=native -mtune=native",
+                "kiwiLang_ENABLE_SANITIZERS": "OFF",
+                "kiwiLang_ENABLE_ASSERTIONS": "OFF",
+                "kiwiLang_ENABLE_LOGGING": "OFF",
+                "kiwiLang_ENABLE_COVERAGE": "OFF",
+                "kiwiLang_ENABLE_JIT": "ON",
+                "kiwiLang_USE_LLVM": "ON",
+                "BUILD_TESTING": "ON",
+                "BUILD_BENCHMARKS": "ON",
+                "BUILD_EXAMPLES": "ON"
+            }
+        },
+        {
+            "name": "release-lto",
+            "displayName": "Release with LTO",
+            "description": "Optimized release build with Link Time Optimization",
+            "inherits": "release",
+            "cacheVariables": {
+                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON",
+                "CMAKE_CXX_FLAGS": "-O3 -DNDEBUG -march=native -mtune=native -flto=thin"
+            }
+        },
+        {
+            "name": "release-size",
+            "displayName": "Release for Size",
+            "description": "Release build optimized for binary size",
+            "inherits": "release",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-Os -DNDEBUG",
+                "CMAKE_EXE_LINKER_FLAGS": "-Wl,--gc-sections"
+            }
+        },
+        {
+            "name": "coverage",
+            "displayName": "Code Coverage",
+            "description": "Build for code coverage analysis",
+            "inherits": "debug",
+            "cacheVariables": {
+                "kiwiLang_ENABLE_COVERAGE": "ON",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -g -fprofile-arcs -ftest-coverage",
+                "CMAKE_EXE_LINKER_FLAGS": "-fprofile-arcs -ftest-coverage"
+            }
+        },
+        {
+            "name": "windows-msvc",
+            "displayName": "Windows MSVC",
+            "description": "Windows build with MSVC compiler",
+            "inherits": "debug",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "toolset": "ClangCL",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "/W4 /WX /EHsc /Zi",
+                "CMAKE_CXX_FLAGS_RELEASE": "/O2 /Ob2 /DNDEBUG",
+                "CMAKE_CXX_FLAGS_DEBUG": "/Od /Ob0 /RTC1"
+            },
+            "environment": {
+                "CC": "clang-cl",
+                "CXX": "clang-cl"
+            }
+        },
+        {
+            "name": "linux-gcc",
+            "displayName": "Linux GCC",
+            "description": "Linux build with GCC compiler",
+            "inherits": "debug",
+            "environment": {
+                "CC": "gcc-12",
+                "CXX": "g++-12"
+            },
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror -std=c++20"
+            }
+        },
+        {
+            "name": "macos-clang",
+            "displayName": "macOS Clang",
+            "description": "macOS build with Apple Clang",
+            "inherits": "debug",
+            "cacheVariables": {
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.0",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror -stdlib=libc++"
+            }
+        },
+        {
+            "name": "ci-debug",
+            "displayName": "CI Debug",
+            "description": "Debug configuration for CI pipelines",
+            "inherits": "debug",
+            "cacheVariables": {
+                "kiwiLang_ENABLE_JIT": "OFF",
+                "kiwiLang_USE_LLVM": "OFF",
+                "BUILD_BENCHMARKS": "OFF",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -Werror"
+            }
+        },
+        {
+            "name": "ci-release",
+            "displayName": "CI Release",
+            "description": "Release configuration for CI pipelines",
+            "inherits": "release",
+            "cacheVariables": {
+                "kiwiLang_ENABLE_JIT": "ON",
+                "kiwiLang_USE_LLVM": "ON",
+                "BUILD_BENCHMARKS": "ON"
+            }
+        },
+        {
+            "name": "dev",
+            "displayName": "Development",
+            "description": "Development configuration with fast builds",
+            "inherits": "debug",
+            "cacheVariables": {
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -Wpedantic -g -O1",
+                "kiwiLang_ENABLE_JIT": "ON",
+                "kiwiLang_USE_LLVM": "ON",
+                "BUILD_BENCHMARKS": "OFF"
+            }
+        },
+        {
+            "name": "minimal",
+            "displayName": "Minimal",
+            "description": "Minimal build with only essential components",
+            "inherits": "debug",
+            "cacheVariables": {
+                "kiwiLang_ENABLE_JIT": "OFF",
+                "kiwiLang_USE_LLVM": "OFF",
+                "BUILD_TESTING": "OFF",
+                "BUILD_BENCHMARKS": "OFF",
+                "BUILD_EXAMPLES": "OFF",
+                "CMAKE_CXX_FLAGS": "-Wall -Wextra -O2"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug-build",
+            "configurePreset": "debug",
+            "description": "Build debug configuration"
+        },
+        {
+            "name": "release-build",
+            "configurePreset": "release",
+            "description": "Build release configuration"
+        },
+        {
+            "name": "ci-build",
+            "configurePreset": "ci-release",
+            "description": "Build for CI pipelines"
+        },
+        {
+            "name": "dev-build",
+            "configurePreset": "dev",
+            "description": "Build development configuration"
+        },
+        {
+            "name": "all",
+            "configurePreset": "debug",
+            "targets": ["all", "test", "examples"],
+            "description": "Build all targets"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "test-debug",
+            "configurePreset": "debug",
+            "description": "Run tests in debug configuration",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": false
+            }
+        },
+        {
+            "name": "test-release",
+            "configurePreset": "release",
+            "description": "Run tests in release configuration",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "test-ci",
+            "configurePreset": "ci-release",
+            "description": "Run tests for CI",
+            "output": {
+                "shortProgress": true
+            }
+        },
+        {
+            "name": "test-coverage",
+            "configurePreset": "coverage",
+            "description": "Run tests with coverage",
+            "execution": {
+                "noTestsAction": "error"
+            }
+        }
+    ],
+    "packagePresets": [
+        {
+            "name": "package-release",
+            "configurePreset": "release-lto",
+            "description": "Create release package",
+            "generators": [
+                "TGZ",
+                "ZIP"
+            ]
+        },
+        {
+            "name": "package-debug",
+            "configurePreset": "debug",
+            "description": "Create debug package",
+            "generators": [
+                "TGZ"
+            ]
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "develop",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "debug"
+                },
+                {
+                    "type": "build",
+                    "name": "debug-build"
+                },
+                {
+                    "type": "test",
+                    "name": "test-debug"
+                }
+            ],
+            "description": "Development workflow: configure, build, test"
+        },
+        {
+            "name": "ci",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "ci-debug"
+                },
+                {
+                    "type": "build",
+                    "name": "ci-build"
+                },
+                {
+                    "type": "test",
+                    "name": "test-ci"
+                },
+                {
+                    "type": "configure",
+                    "name": "ci-release"
+                },
+                {
+                    "type": "build",
+                    "name": "ci-build"
+                },
+                {
+                    "type": "test",
+                    "name": "test-ci"
+                }
+            ],
+            "description": "CI workflow: build and test both debug and release"
+        },
+        {
+            "name": "release",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "release-lto"
+                },
+                {
+                    "type": "build",
+                    "name": "release-build"
+                },
+                {
+                    "type": "test",
+                    "name": "test-release"
+                },
+                {
+                    "type": "package",
+                    "name": "package-release"
+                }
+            ],
+            "description": "Release workflow: build, test, package"
+        }
+    ],
+    "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+            "intelliSenseMode": "windows-msvc-x64",
+            "hostOS": ["Windows"]
+        },
+        "jetbrains.com/CLion/1.0": {
+            "keepTargetFiles": true
+        }
+    },
+    "include": [
+        {
+            "file": "cmake/UserPresets.json",
+            "optional": true
+        }
+    ]
+}

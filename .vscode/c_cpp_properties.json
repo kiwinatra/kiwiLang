@@ -1,0 +1,104 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/third_party/catch2",
+                "${workspaceFolder}/**",
+                "C:/LLVM/include",
+                "C:/Program Files (x86)/Windows Kits/10/Include/**",
+                "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/include",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/ucrt",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/um",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.19041.0/shared"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "kiwiLang_WINDOWS",
+                "kiwiLang_DLL_EXPORT",
+                "kiwiLang_ENABLE_JIT",
+                "kiwiLang_USE_LLVM",
+                "_CRT_SECURE_NO_WARNINGS",
+                "_SCL_SECURE_NO_WARNINGS",
+                "NOMINMAX",
+                "WIN32_LEAN_AND_MEAN"
+            ],
+            "windowsSdkVersion": "10.0.19041.0",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "windows-msvc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json",
+            "mergeConfigurations": false,
+            "browse": {
+                "path": [
+                    "${workspaceFolder}",
+                    "C:/LLVM/include",
+                    "C:/Program Files (x86)/Windows Kits/10/Include/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db"
+            }
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/third_party/catch2",
+                "${workspaceFolder}/**",
+                "/usr/include",
+                "/usr/local/include",
+                "/usr/include/c++/11",
+                "/usr/include/x86_64-linux-gnu/c++/11"
+            ],
+            "defines": [
+                "_DEBUG",
+                "kiwiLang_LINUX",
+                "kiwiLang_ENABLE_JIT",
+                "kiwiLang_USE_LLVM",
+                "__STDC_FORMAT_MACROS",
+                "__STDC_LIMIT_MACROS"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++20",
+            "intelliSenseMode": "linux-gcc-x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        },
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/third_party/catch2",
+                "${workspaceFolder}/**",
+                "/usr/local/include",
+                "/Library/Developer/CommandLineTools/usr/include/c++/v1",
+                "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1"
+            ],
+            "defines": [
+                "_DEBUG",
+                "kiwiLang_MACOS",
+                "kiwiLang_ENABLE_JIT",
+                "kiwiLang_USE_LLVM",
+                "__APPLE__",
+                "__MACH__"
+            ],
+            "macFrameworkPath": [
+                "/System/Library/Frameworks",
+                "/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang++",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "macos-clang-x64",
+            "configurationProvider": "ms-vscode.cmake-tools",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+        }
+    ],
+    "version": 4
+}

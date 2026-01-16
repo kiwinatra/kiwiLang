@@ -1,0 +1,436 @@
+module primes;
+
+// Sieve of Eratosthenes implementation
+fn sieve(limit: i32) -> []bool {
+    let mut is_prime = []bool{};
+    is_prime.resize(limit + 1, true);
+    
+    if limit >= 0 {
+        is_prime[0] = false;
+    }
+    if limit >= 1 {
+        is_prime[1] = false;
+    }
+    
+    let mut p = 2;
+    while p * p <= limit {
+        if is_prime[p] {
+            let mut i = p * p;
+            while i <= limit {
+                is_prime[i] = false;
+                i += p;
+            }
+        }
+        p += 1;
+    }
+    
+    return is_prime;
+}
+
+// Count primes using the sieve
+fn count_primes(limit: i32) -> i32 {
+    let is_prime = sieve(limit);
+    let mut count = 0;
+    
+    for i in 0..=limit {
+        if is_prime[i] {
+            count += 1;
+        }
+    }
+    
+    return count;
+}
+
+// Miller-Rabin primality test for individual numbers
+fn is_prime_miller_rabin(n: i64, k: i32) -> bool {
+    if n <= 1 {
+        return false;
+    }
+    if n <= 3 {
+        return true;
+    }
+    if n % 2 == 0 {
+        return false;
+    }
+    
+    // Write n-1 as d * 2^r
+    let mut d = n - 1;
+    let mut r = 0;
+    while d % 2 == 0 {
+        d /= 2;
+        r += 1;
+    }
+    
+    // Witness loop
+    for _ in 0..k {
+        let a = 2 + (rand() % (n - 4));
+        let mut x = mod_pow(a, d, n);
+        
+        if x == 1 || x == n - 1 {
+            continue;
+        }
+        
+        let mut continue_witness = false;
+        for _ in 0..r - 1 {
+            x = (x * x) % n;
+            if x == n - 1 {
+                continue_witness = true;
+                break;
+            }
+        }
+        
+        if !continue_witness {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Modular exponentiation: (base^exp) % mod
+fn mod_pow(mut base: i64, mut exp: i64, mod: i64) -> i64 {
+    let mut result = 1;
+    base = base % mod;
+    
+    while exp > 0 {
+        if exp % 2 == 1 {
+            result = (result * base) % mod;
+        }
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    
+    return result;
+}
+
+// Simple deterministic primality test (for small numbers)
+fn is_prime_simple(n: i32) -> bool {
+    if n <= 1 {
+        return false;
+    }
+    if n <= 3 {
+        return true;
+    }
+    if n % 2 == 0 || n % 3 == 0 {
+        return false;
+    }
+    
+    let mut i = 5;
+    while i * i <= n {
+        if n % i == 0 || n % (i + 2) == 0 {
+            return false;
+        }
+        i += 6;
+    }
+    
+    return true;
+}
+
+// Generate first n primes
+fn generate_primes(n: i32) -> []i32 {
+    let mut primes = []i32{};
+    primes.reserve(n);
+    
+    let mut num = 2;
+    while primes.size() < n {
+        if is_prime_simple(num) {
+            primes.push(num);
+        }
+        num += 1;
+    }
+    
+    return primes;
+}
+
+// Prime factorization
+fn factorize(mut n: i64) -> []Pair<i64, i32> {
+    let mut factors = []Pair<i64, i32>{};
+    
+    // Factor out 2s
+    let mut count = 0;
+    while n % 2 == 0 {
+        n /= 2;
+        count += 1;
+    }
+    if count > 0 {
+        factors.push(Pair(2, count));
+    }
+    
+    // Factor out odd numbers
+    let mut i = 3;
+    while i * i <= n {
+        count = 0;
+        while n % i == 0 {
+            n /= i;
+            count += 1;
+        }
+        if count > 0 {
+            factors.push(Pair(i, count));
+        }
+        i += 2;
+    }
+    
+    // If n is still > 1, it's a prime factor
+    if n > 1 {
+        factors.push(Pair(n, 1));
+    }
+    
+    return factors;
+}
+
+// Greatest Common Divisor (Euclidean algorithm)
+fn gcd(a: i64, b: i64) -> i64 {
+    let mut x = a;
+    let mut y = b;
+    
+    while y != 0 {
+        let temp = y;
+        y = x % y;
+        x = temp;
+    }
+    
+    return x;
+}
+
+// Least Common Multiple
+fn lcm(a: i64, b: i64) -> i64 {
+    if a == 0 || b == 0 {
+        return 0;
+    }
+    return (a / gcd(a, b)) * b;
+}
+
+// Check if two numbers are coprime
+fn is_coprime(a: i64, b: i64) -> bool {
+    return gcd(a, b) == 1;
+}
+
+// Euler's Totient function
+fn phi(n: i64) -> i64 {
+    if n <= 1 {
+        return if n == 1 { 1 } else { 0 };
+    }
+    
+    let factors = factorize(n);
+    let mut result = n;
+    
+    for factor in factors {
+        result = result - result / factor.first;
+    }
+    
+    return result;
+}
+
+// Prime number theorem approximation
+fn prime_count_approx(x: f64) -> f64 {
+    return x / ln(x);
+}
+
+// Natural logarithm approximation
+fn ln(x: f64) -> f64 {
+    if x <= 0 {
+        return 0.0;
+    }
+    
+    // Simple Taylor series approximation
+    let mut y = (x - 1.0) / (x + 1.0);
+    let mut term = y;
+    let y2 = y * y;
+    let mut sum = term;
+    
+    for i in 1..10 {
+        term *= y2;
+        sum += term / (2.0 * i as f64 + 1.0);
+    }
+    
+    return 2.0 * sum;
+}
+
+// Benchmark function: Find primes up to limit
+fn benchmark_sieve(limit: i32) -> f64 {
+    let start_time = current_time();
+    
+    let is_prime = sieve(limit);
+    let mut count = 0;
+    
+    for i in 0..=limit {
+        if is_prime[i] {
+            count += 1;
+        }
+    }
+    
+    let end_time = current_time();
+    let elapsed = end_time - start_time;
+    
+    println("Found " + count.toString() + " primes up to " + limit.toString());
+    println("Time: " + elapsed.toString() + " seconds");
+    
+    return elapsed;
+}
+
+// Benchmark multiple algorithms
+fn run_prime_benchmarks() {
+    println("=== Prime Number Benchmarks ===");
+    println("");
+    
+    let limits = [100, 1000, 10000, 50000, 100000];
+    
+    for limit in limits {
+        println("Limit: " + limit.toString());
+        
+        // Sieve benchmark
+        let sieve_time = benchmark_sieve(limit);
+        
+        // Simple primality test benchmark
+        let start_time = current_time();
+        let mut count = 0;
+        for i in 0..=limit {
+            if is_prime_simple(i) {
+                count += 1;
+            }
+        }
+        let simple_time = current_time() - start_time;
+        
+        println("Sieve time: " + sieve_time.toString() + "s");
+        println("Simple test time: " + simple_time.toString() + "s");
+        println("Speedup: " + (simple_time / sieve_time).toString() + "x");
+        println("");
+    }
+    
+    // Generate first 1000 primes
+    println("Generating first 1000 primes...");
+    let start_time = current_time();
+    let first_1000 = generate_primes(1000);
+    let gen_time = current_time() - start_time;
+    
+    println("Generated " + first_1000.size().toString() + " primes");
+    println("Last prime: " + first_1000[first_1000.size() - 1].toString());
+    println("Time: " + gen_time.toString() + " seconds");
+    println("");
+    
+    // Factorization benchmark
+    println("Factorizing large numbers...");
+    let numbers_to_factor = [123456789, 987654321, 2147483647];
+    
+    for num in numbers_to_factor {
+        let start_time = current_time();
+        let factors = factorize(num);
+        let factor_time = current_time() - start_time;
+        
+        print(num.toString() + " = ");
+        for i in 0..factors.size() {
+            let factor = factors[i];
+            print(factor.first.toString() + "^" + factor.second.toString());
+            if i < factors.size() - 1 {
+                print(" * ");
+            }
+        }
+        println("");
+        println("Factorization time: " + factor_time.toString() + "s");
+    }
+}
+
+// Main benchmark entry point
+fn main() -> i32 {
+    println("KLang Prime Number Benchmark Suite");
+    println("==================================");
+    println("");
+    
+    run_prime_benchmarks();
+    
+    // Verify results
+    println("");
+    println("Verification tests:");
+    
+    // Test sieve
+    let primes_up_to_100 = count_primes(100);
+    println("Primes up to 100: " + primes_up_to_100.toString() + " (expected: 25)");
+    assert(primes_up_to_100 == 25);
+    
+    // Test simple primality
+    assert(is_prime_simple(2) == true);
+    assert(is_prime_simple(3) == true);
+    assert(is_prime_simple(4) == false);
+    assert(is_prime_simple(17) == true);
+    assert(is_prime_simple(100) == false);
+    
+    // Test GCD
+    assert(gcd(48, 18) == 6);
+    assert(gcd(101, 103) == 1);
+    
+    // Test LCM
+    assert(lcm(4, 6) == 12);
+    assert(lcm(21, 6) == 42);
+    
+    // Test Eulers Totient
+    assert(phi(1) == 1);
+    assert(phi(9) == 6);
+    assert(phi(12) == 4);
+    
+    println("All tests passed!");
+    
+    return 0;
+}
+
+// Utility functions
+
+struct Pair<T, U> {
+    first: T,
+    second: U,
+    
+    fn init(first: T, second: U) -> Pair<T, U> {
+        return Pair { first, second };
+    }
+}
+
+fn current_time() -> f64 {
+    // System time in seconds with microsecond precision
+    extern "C" {
+        fn gettimeofday(tv: *mut Timeval, tz: *mut Timezone) -> i32;
+    }
+    
+    struct Timeval {
+        tv_sec: i64,
+        tv_usec: i64,
+    }
+    
+    struct Timezone {
+        tz_minuteswest: i32,
+        tz_dsttime: i32,
+    }
+    
+    let mut tv = Timeval { tv_sec: 0, tv_usec: 0 };
+    let mut tz = Timezone { tz_minuteswest: 0, tz_dsttime: 0 };
+    
+    unsafe {
+        gettimeofday(&mut tv, &mut tz);
+    }
+    
+    return tv.tv_sec as f64 + tv.tv_usec as f64 / 1_000_000.0;
+}
+
+fn rand() -> i64 {
+    // Simple PRNG for Miller-Rabin
+    extern "C" {
+        fn rand() -> i32;
+    }
+    
+    return unsafe { rand() } as i64;
+}
+
+fn assert(condition: bool) {
+    if !condition {
+        println("Assertion failed!");
+        exit(1);
+    }
+}
+
+fn exit(code: i32) -> never {
+    extern "C" {
+        fn exit(code: i32) -> never;
+    }
+    
+    unsafe {
+        exit(code);
+    }
+}

@@ -1,0 +1,44 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+# Editor-based HTTP Client requests
+/httpRequests/
+
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local/
+
+# AWS Regions
+/aws.xml
+
+# Compilation output
+/out/
+/build/
+
+# VCS
+/vcs.xml
+
+# Module files
+/*.iml
+
+# CMake
+/cmake-build-*/
+
+# File-based project format
+*.iws
+
+# IntelliJ
+/install/
+
+# JIRA plugin
+atlassian-ide-plugin.xml
+
+# Crashlytics plugin (for Android Studio and IntelliJ)
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Profiler snapshots
+*.hprof
