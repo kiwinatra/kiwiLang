@@ -8,7 +8,7 @@
 #include <functional>
 #include <unordered_map>
 
-namespace klang {
+namespace kiwiLang {
 
 // Forward declarations
 class Runtime;
@@ -617,4 +617,4 @@ private:
     size_t size_ = 0;
 };
 
-} // namespace klang
+} // namespace kiwiLang

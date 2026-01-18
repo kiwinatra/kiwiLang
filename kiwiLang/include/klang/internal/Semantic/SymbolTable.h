@@ -10,7 +10,7 @@
 #include <functional>
 #include <optional>
 
-namespace klang {
+namespace kiwiLang {
 
 class Type;
 class ASTNode;
@@ -604,4 +604,4 @@ inline uint32_t Scope::index() const {
     return index_;
 }
 
-} // namespace klang
+} // namespace kiwiLang

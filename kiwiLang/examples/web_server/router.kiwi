@@ -1,0 +1,797 @@
+// Advanced Router for KiwiLang Web Server
+// Supports RESTful APIs, middleware, and advanced routing features
+
+module router {
+    import http;
+    import middleware;
+    
+    // Types
+    type RouteHandler = (middleware.Context) -> middleware.Response;
+    type RouteMiddleware = (middleware.Context) -> middleware.Response?;
+    type RouteMatcher = (string, map[string, string]) -> bool;
+    
+    // Route definition
+    class Route {
+        var method: string;
+        var path: string;
+        var handler: RouteHandler;
+        var middleware: [RouteMiddleware];
+        var name: string?;
+        var constraints: map[string, string]; // regex constraints
+        
+        init(method: string, path: string, handler: RouteHandler) {
+            this.method = method.toUpper();
+            this.path = path;
+            this.handler = handler;
+            this.middleware = [];
+            this.constraints = {};
+        }
+        
+        func use(middleware: RouteMiddleware) -> Route {
+            this.middleware.push(middleware);
+            return this;
+        }
+        
+        func name(name: string) -> Route {
+            this.name = name;
+            return this;
+        }
+        
+        func where(constraints: map[string, string]) -> Route {
+            for (param, pattern) in constraints {
+                this.constraints[param] = pattern;
+            }
+            return this;
+        }
+        
+        func matches(request: http.Request) -> (bool, map[string, string]) {
+            if this.method != request.method && this.method != "ANY" {
+                return (false, {});
+            }
+            
+            return this.matchPath(request.url.path);
+        }
+        
+        private func matchPath(requestPath: string) -> (bool, map[string, string]) {
+            let routeParts = this.parsePath(this.path);
+            let requestParts = requestPath.split("/").filter(p => p.length > 0);
+            
+            if routeParts.length != requestParts.length && 
+               !this.path.contains("*") && 
+               !this.path.contains("{") {
+                return (false, {});
+            }
+            
+            var params = {} as map[string, string];
+            var routeIndex = 0;
+            var requestIndex = 0;
+            
+            while routeIndex < routeParts.length && requestIndex < requestParts.length {
+                let routePart = routeParts[routeIndex];
+                let requestPart = requestParts[requestIndex];
+                
+                if routePart.startsWith("{") && routePart.endsWith("}") {
+                    // Parameter
+                    let paramName = routePart.substring(1, routePart.length - 1);
+                    
+                    // Check constraint if exists
+                    if this.constraints.contains(paramName) {
+                        let pattern = this.constraints[paramName];
+                        if !regex.match(pattern, requestPart) {
+                            return (false, {});
+                        }
+                    }
+                    
+                    params[paramName] = requestPart;
+                    routeIndex = routeIndex + 1;
+                    requestIndex = requestIndex + 1;
+                } else if routePart == "*" {
+                    // Wildcard - capture remaining path
+                    let remaining = requestParts.slice(requestIndex).join("/");
+                    params["*"] = remaining;
+                    return (true, params);
+                } else if routePart == "**" {
+                    // Double wildcard - matches any number of segments
+                    routeIndex = routeIndex + 1;
+                    // Skip to next route part or end
+                    while requestIndex < requestParts.length && 
+                          (routeIndex >= routeParts.length || 
+                           routeParts[routeIndex] != requestParts[requestIndex]) {
+                        requestIndex = requestIndex + 1;
+                    }
+                } else if routePart != requestPart {
+                    // Literal doesn't match
+                    return (false, {});
+                } else {
+                    // Literal matches
+                    routeIndex = routeIndex + 1;
+                    requestIndex = requestIndex + 1;
+                }
+            }
+            
+            // Check if we consumed all parts
+            if routeIndex < routeParts.length || requestIndex < requestParts.length {
+                return (false, {});
+            }
+            
+            return (true, params);
+        }
+        
+        private func parsePath(path: string) -> [string] {
+            return path.split("/").filter(p => p.length > 0);
+        }
+        
+        func execute(context: middleware.Context) -> middleware.Response {
+            // Apply route middleware
+            for mw in this.middleware {
+                let result = mw(context);
+                if result != nil {
+                    return result!;
+                }
+            }
+            
+            // Execute handler
+            return this.handler(context);
+        }
+    }
+    
+    // Router group
+    class RouterGroup {
+        var prefix: string;
+        var middleware: [RouteMiddleware];
+        var routes: [Route];
+        var groups: [RouterGroup];
+        var parent: RouterGroup?;
+        
+        init(prefix: string = "") {
+            this.prefix = prefix;
+            this.middleware = [];
+            this.routes = [];
+            this.groups = [];
+        }
+        
+        func use(middleware: RouteMiddleware) -> RouterGroup {
+            this.middleware.push(middleware);
+            return this;
+        }
+        
+        func group(prefix: string, callback: (RouterGroup) -> void) -> RouterGroup {
+            let group = RouterGroup(this.prefix + prefix);
+            group.parent = this;
+            group.middleware = this.middleware.copy(); // Inherit parent middleware
+            
+            callback(group);
+            
+            this.groups.push(group);
+            return group;
+        }
+        
+        // HTTP methods
+        func get(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("GET", path, handler);
+        }
+        
+        func post(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("POST", path, handler);
+        }
+        
+        func put(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("PUT", path, handler);
+        }
+        
+        func patch(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("PATCH", path, handler);
+        }
+        
+        func delete(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("DELETE", path, handler);
+        }
+        
+        func options(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("OPTIONS", path, handler);
+        }
+        
+        func head(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("HEAD", path, handler);
+        }
+        
+        func any(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("ANY", path, handler);
+        }
+        
+        func match(methods: [string], path: string, handler: RouteHandler) -> [Route] {
+            var routes = [] as [Route];
+            for method in methods {
+                routes.push(this.addRoute(method, path, handler));
+            }
+            return routes;
+        }
+        
+        // Resourceful routing
+        func resource(name: string, controller: any) -> void {
+            let basePath = if this.prefix.length > 0 then 
+                this.prefix + "/" + name else 
+                "/" + name;
+            
+            // Index
+            if controller.index != nil {
+                this.get(basePath, controller.index);
+            }
+            
+            // Create
+            if controller.create != nil {
+                this.get(basePath + "/create", controller.create);
+            }
+            
+            // Store
+            if controller.store != nil {
+                this.post(basePath, controller.store);
+            }
+            
+            // Show
+            if controller.show != nil {
+                this.get(basePath + "/{id}", controller.show);
+            }
+            
+            // Edit
+            if controller.edit != nil {
+                this.get(basePath + "/{id}/edit", controller.edit);
+            }
+            
+            // Update
+            if controller.update != nil {
+                this.put(basePath + "/{id}", controller.update);
+                this.patch(basePath + "/{id}", controller.update);
+            }
+            
+            // Destroy
+            if controller.destroy != nil {
+                this.delete(basePath + "/{id}", controller.destroy);
+            }
+        }
+        
+        // Add route with prefix and middleware
+        private func addRoute(method: string, path: string, handler: RouteHandler) -> Route {
+            let fullPath = this.prefix + path;
+            let route = Route(method, fullPath, handler);
+            
+            // Add group middleware to route
+            for mw in this.middleware {
+                route.use(mw);
+            }
+            
+            this.routes.push(route);
+            return route;
+        }
+        
+        // Get all routes (including subgroups)
+        func getAllRoutes() -> [Route] {
+            var allRoutes = this.routes.copy();
+            
+            for group in this.groups {
+                allRoutes = allRoutes.concat(group.getAllRoutes());
+            }
+            
+            return allRoutes;
+        }
+    }
+    
+    // Main router
+    class Router {
+        var groups: [RouterGroup];
+        var routes: [Route];
+        var namedRoutes: map[string, Route];
+        var middleware: [middleware.Middleware];
+        var errorHandlers: map[int, RouteHandler];
+        
+        init() {
+            this.groups = [];
+            this.routes = [];
+            this.namedRoutes = {};
+            this.middleware = [];
+            this.errorHandlers = {};
+        }
+        
+        // Global middleware
+        func use(middleware: middleware.Middleware) -> Router {
+            this.middleware.push(middleware);
+            return this;
+        }
+        
+        // Create router group
+        func group(prefix: string, callback: (RouterGroup) -> void) -> RouterGroup {
+            let group = RouterGroup(prefix);
+            callback(group);
+            this.groups.push(group);
+            return group;
+        }
+        
+        // Direct route registration
+        func get(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("GET", path, handler);
+        }
+        
+        func post(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("POST", path, handler);
+        }
+        
+        func put(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("PUT", path, handler);
+        }
+        
+        func patch(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("PATCH", path, handler);
+        }
+        
+        func delete(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("DELETE", path, handler);
+        }
+        
+        func options(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("OPTIONS", path, handler);
+        }
+        
+        func head(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("HEAD", path, handler);
+        }
+        
+        func any(path: string, handler: RouteHandler) -> Route {
+            return this.addRoute("ANY", path, handler);
+        }
+        
+        // Add route with optional name
+        func addRoute(method: string, path: string, handler: RouteHandler, name: string? = nil) -> Route {
+            let route = Route(method, path, handler);
+            
+            if name != nil {
+                route.name(name!);
+                this.namedRoutes[name!] = route;
+            }
+            
+            this.routes.push(route);
+            return route;
+        }
+        
+        // Generate URL from route name
+        func route(name: string, params: map[string, string] = {}) -> string? {
+            if !this.namedRoutes.contains(name) {
+                return nil;
+            }
+            
+            let route = this.namedRoutes[name];
+            return this.replaceParams(route.path, params);
+        }
+        
+        private func replaceParams(path: string, params: map[string, string]) -> string {
+            var result = path;
+            
+            for (key, value) in params {
+                let placeholder = "{" + key + "}";
+                result = result.replace(placeholder, value);
+            }
+            
+            return result;
+        }
+        
+        // Error handlers
+        func error(status: int, handler: RouteHandler) -> void {
+            this.errorHandlers[status] = handler;
+        }
+        
+        // Get all routes
+        func getAllRoutes() -> [Route] {
+            var allRoutes = this.routes.copy();
+            
+            for group in this.groups {
+                allRoutes = allRoutes.concat(group.getAllRoutes());
+            }
+            
+            return allRoutes;
+        }
+        
+        // Route matching and execution
+        func handleRequest(request: http.Request) -> middleware.Response {
+            let context = middleware.Context(request);
+            
+            // Apply global middleware
+            for mw in this.middleware {
+                let result = mw(context);
+                if result != nil {
+                    return result!;
+                }
+            }
+            
+            // Find matching route
+            let allRoutes = this.getAllRoutes();
+            
+            for route in allRoutes {
+                let (matches, params) = route.matches(request);
+                if matches {
+                    context.params = params;
+                    return route.execute(context);
+                }
+            }
+            
+            // Check for error handler
+            if this.errorHandlers.contains(404) {
+                return this.errorHandlers[404](context);
+            }
+            
+            // Default 404
+            return middleware.Response {
+                status: 404,
+                headers: {"Content-Type": "application/json"},
+                body: json.stringify({error: "Not Found"})
+            };
+        }
+        
+        // Mount sub-router
+        func mount(path: string, router: Router) -> void {
+            this.group(path, (group: RouterGroup) -> void {
+                for route in router.getAllRoutes() {
+                    // Adjust path and add route to group
+                    let adjustedPath = route.path;
+                    let adjustedRoute = Route(route.method, adjustedPath, route.handler);
+                    
+                    // Copy middleware
+                    for mw in route.middleware {
+                        adjustedRoute.use(mw);
+                    }
+                    
+                    group.routes.push(adjustedRoute);
+                }
+            });
+        }
+        
+        // API versioning
+        func apiVersion(version: string, callback: (Router) -> void) -> void {
+            let versionRouter = Router();
+            callback(versionRouter);
+            this.mount("/api/v" + version, versionRouter);
+        }
+        
+        // Generate route table (for debugging/documentation)
+        func getRouteTable() -> [map[string, any]] {
+            var table = [] as [map[string, any]];
+            
+            for route in this.getAllRoutes() {
+                table.push({
+                    "method": route.method,
+                    "path": route.path,
+                    "name": route.name,
+                    "constraints": route.constraints
+                });
+            }
+            
+            return table;
+        }
+        
+        // Generate OpenAPI/Swagger documentation
+        func generateOpenAPI(info: map[string, any]) -> map[string, any] {
+            let openapi = {
+                "openapi": "3.0.0",
+                "info": info,
+                "paths": {} as map[string, any],
+                "components": {
+                    "schemas": {},
+                    "securitySchemes": {}
+                }
+            };
+            
+            for route in this.getAllRoutes() {
+                let pathItem = openapi.paths[route.path];
+                if pathItem == nil {
+                    pathItem = {};
+                    openapi.paths[route.path] = pathItem;
+                }
+                
+                let method = route.method.toLower();
+                pathItem[method] = {
+                    "summary": route.name ?? "",
+                    "parameters": this.extractParameters(route),
+                    "responses": {
+                        "200": {
+                            "description": "Success"
+                        }
+                    }
+                };
+            }
+            
+            return openapi;
+        }
+        
+        private func extractParameters(route: Route) -> [map[string, any]] {
+            var parameters = [] as [map[string, any]];
+            
+            // Extract path parameters
+            let pathParams = this.extractPathParams(route.path);
+            for param in pathParams {
+                parameters.push({
+                    "name": param,
+                    "in": "path",
+                    "required": true,
+                    "schema": {"type": "string"}
+                });
+            }
+            
+            // Add constraints
+            for (param, pattern) in route.constraints {
+                for p in parameters {
+                    if p["name"] == param {
+                        p["schema"]["pattern"] = pattern;
+                        break;
+                    }
+                }
+            }
+            
+            return parameters;
+        }
+        
+        private func extractPathParams(path: string) -> [string] {
+            var params = [] as [string];
+            let regex = /\{([^}]+)\}/g;
+            let matches = regex.matchAll(path);
+            
+            for match in matches {
+                params.push(match[1]);
+            }
+            
+            return params;
+        }
+    }
+    
+    // RESTful resource controller template
+    class ResourceController {
+        var model: any;
+        
+        init(model: any) {
+            this.model = model;
+        }
+        
+        func index(context: middleware.Context) -> middleware.Response {
+            let items = this.model.all();
+            return context.json({
+                "data": items,
+                "meta": {
+                    "total": items.length,
+                    "page": 1,
+                    "per_page": 20
+                }
+            });
+        }
+        
+        func show(context: middleware.Context) -> middleware.Response {
+            let id = context.getParam("id");
+            let item = this.model.find(id);
+            
+            if item == nil {
+                return context.json({
+                    "error": "Not found"
+                }, 404);
+            }
+            
+            return context.json({"data": item});
+        }
+        
+        func store(context: middleware.Context) -> middleware.Response {
+            let data = context.state["body"];
+            let item = this.model.create(data);
+            
+            return context.json({
+                "data": item,
+                "message": "Created successfully"
+            }, 201);
+        }
+        
+        func update(context: middleware.Context) -> middleware.Response {
+            let id = context.getParam("id");
+            let data = context.state["body"];
+            
+            let success = this.model.update(id, data);
+            
+            if !success {
+                return context.json({
+                    "error": "Not found"
+                }, 404);
+            }
+            
+            return context.json({
+                "message": "Updated successfully"
+            });
+        }
+        
+        func destroy(context: middleware.Context) -> middleware.Response {
+            let id = context.getParam("id");
+            
+            let success = this.model.delete(id);
+            
+            if !success {
+                return context.json({
+                    "error": "Not found"
+                }, 404);
+            }
+            
+            return context.json({
+                "message": "Deleted successfully"
+            }, 204);
+        }
+    }
+    
+    // Example usage
+    pub func createExampleRouter() -> Router {
+        let router = Router();
+        
+        // Global middleware
+        router.use(middleware.logger());
+        router.use(middleware.jsonParser());
+        
+        // Home page
+        router.get("/", (context: middleware.Context) -> middleware.Response {
+            return context.html("""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>KiwiLang Web Server</title>
+                </head>
+                <body>
+                    <h1>Welcome to KiwiLang Web Server!</h1>
+                </body>
+                </html>
+            """);
+        }).name("home");
+        
+        // API routes
+        let api = router.group("/api", (apiGroup: RouterGroup) -> void {
+            // API middleware
+            apiGroup.use(middleware.cors({
+                origin: "*",
+                methods: ["GET", "POST", "PUT", "DELETE"]
+            }));
+            
+            // Health check
+            apiGroup.get("/health", (context: middleware.Context) -> middleware.Response {
+                return context.json({
+                    "status": "healthy",
+                    "timestamp": time.now(),
+                    "uptime": process.uptime()
+                });
+            }).name("api.health");
+            
+            // User routes
+            apiGroup.group("/users", (usersGroup: RouterGroup) -> void {
+                usersGroup.get("/", (context: middleware.Context) -> middleware.Response {
+                    return context.json({
+                        "users": [
+                            {"id": 1, "name": "Alice"},
+                            {"id": 2, "name": "Bob"}
+                        ]
+                    });
+                }).name("users.index");
+                
+                usersGroup.post("/", (context: middleware.Context) -> middleware.Response {
+                    let data = context.state["body"];
+                    return context.json({
+                        "message": "User created",
+                        "data": data
+                    }, 201);
+                }).name("users.store");
+                
+                usersGroup.get("/{id}", (context: middleware.Context) -> middleware.Response {
+                    let id = context.getParam("id");
+                    return context.json({
+                        "user": {"id": id, "name": "User " + id}
+                    });
+                }).where({"id": "\\d+"}).name("users.show");
+                
+                usersGroup.put("/{id}", (context: middleware.Context) -> middleware.Response {
+                    let id = context.getParam("id");
+                    let data = context.state["body"];
+                    return context.json({
+                        "message": "User updated",
+                        "id": id,
+                        "data": data
+                    });
+                }).name("users.update");
+                
+                usersGroup.delete("/{id}", (context: middleware.Context) -> middleware.Response {
+                    let id = context.getParam("id");
+                    return context.json({
+                        "message": "User deleted",
+                        "id": id
+                    });
+                }).name("users.destroy");
+            });
+            
+            // Posts resource with controller
+            let postsController = ResourceController({});
+            apiGroup.resource("posts", postsController);
+            
+            // Nested routes
+            apiGroup.group("/posts/{postId}/comments", (commentsGroup: RouterGroup) -> void {
+                commentsGroup.get("/", (context: middleware.Context) -> middleware.Response {
+                    let postId = context.getParam("postId");
+                    return context.json({
+                        "postId": postId,
+                        "comments": []
+                    });
+                });
+                
+                commentsGroup.post("/", (context: middleware.Context) -> middleware.Response {
+                    let postId = context.getParam("postId");
+                    let data = context.state["body"];
+                    return context.json({
+                        "message": "Comment created",
+                        "postId": postId,
+                        "data": data
+                    }, 201);
+                });
+            });
+        });
+        
+        // Admin routes with authentication
+        router.group("/admin", (adminGroup: RouterGroup) -> void {
+            adminGroup.use(middleware.authenticate("jwt", {
+                secret: process.env.JWT_SECRET
+            }));
+            
+            adminGroup.use(middleware.authorize("admin"));
+            
+            adminGroup.get("/dashboard", (context: middleware.Context) -> middleware.Response {
+                return context.json({
+                    "message": "Admin dashboard",
+                    "user": context.user
+                });
+            });
+        });
+        
+        // Static files
+        router.get("/static/*", middleware.staticFiles("./public"));
+        
+        // Error handlers
+        router.error(404, (context: middleware.Context) -> middleware.Response {
+            return context.json({
+                "error": "Not Found",
+                "path": context.request.url.path
+            }, 404);
+        });
+        
+        router.error(500, (context: middleware.Context) -> middleware.Response {
+            return context.json({
+                "error": "Internal Server Error"
+            }, 500);
+        });
+        
+        return router;
+    }
+    
+    // Run server with router
+    pub func startServer(port: int = 8080, router: Router) -> void {
+        let app = middleware.createApp();
+        
+        // Add router as final middleware
+        app.use((context: middleware.Context) -> middleware.Response? {
+            return router.handleRequest(context.request);
+        });
+        
+        let server = http.Server();
+        server.on("request", (request: http.Request, response: http.Response) -> void {
+            let mwResponse = app.handle(request);
+            
+            response.statusCode = mwResponse.status;
+            for (name, value) in mwResponse.headers {
+                response.setHeader(name, value);
+            }
+            response.write(mwResponse.body);
+            response.end();
+        });
+        
+        server.listen(port, () -> void {
+            print(`Server running on http://localhost:${port}`);
+            print("Available routes:");
+            
+            for route in router.getAllRoutes() {
+                print(`  ${route.method} ${route.path}`);
+            }
+        });
+    }
+}

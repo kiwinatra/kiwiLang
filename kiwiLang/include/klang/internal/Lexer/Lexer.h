@@ -1,15 +1,15 @@
-include/klang/internal/Lexer/Lexer.h
+include/kiwiLang/internal/Lexer/Lexer.h
 #pragma once
 #include "Scanner.h"
 #include "Token.h"
-#include "klang/internal/Diagnostics/Diagnostic.h"
-#include "klang/internal/Utils/Unicode.h"
+#include "kiwiLang/internal/Diagnostics/Diagnostic.h"
+#include "kiwiLang/internal/Utils/Unicode.h"
 #include <string_view>
 #include <vector>
 #include <memory>
 #include <stack>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 
 class LexerContext {
@@ -209,4 +209,4 @@ public:
 };
 
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

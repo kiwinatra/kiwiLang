@@ -10,7 +10,7 @@
 #include <ostream>
 #include <system_error>
 
-namespace klang {
+namespace kiwiLang {
 
 class SourceLocation;
 class SourceRange;
@@ -557,4 +557,4 @@ inline bool Diagnostics::has_issues() const {
     return has_errors() || has_warnings();
 }
 
-} // namespace klang
+} // namespace kiwiLang

@@ -1,4 +1,4 @@
-include/klang/internal/Runtime/GarbageCollector.h
+include/kiwiLang/internal/Runtime/GarbageCollector.h
 #pragma once
 #include "Object.h"
 #include "Memory.h"
@@ -9,7 +9,7 @@ include/klang/internal/Runtime/GarbageCollector.h
 #include <atomic>
 #include <mutex>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace runtime {
 
@@ -259,4 +259,4 @@ private:
 
 } // namespace runtime
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

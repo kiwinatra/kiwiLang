@@ -1,4 +1,4 @@
-include/klang/internal/Runtime/Array.h
+include/kiwiLang/internal/Runtime/Array.h
 #pragma once
 #include "Object.h"
 #include "Value.h"
@@ -7,7 +7,7 @@ include/klang/internal/Runtime/Array.h
 #include <vector>
 #include <type_traits>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace runtime {
 
@@ -166,4 +166,4 @@ private:
 
 } // namespace runtime
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

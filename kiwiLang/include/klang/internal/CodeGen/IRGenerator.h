@@ -1,4 +1,4 @@
-include/klang/internal/CodeGen/JITCompiler.h
+include/kiwiLang/internal/CodeGen/JITCompiler.h
 #pragma once
 #include "IR.h"
 #include "Target.h"
@@ -7,7 +7,7 @@ include/klang/internal/CodeGen/JITCompiler.h
 #include <unordered_map>
 #include <mutex>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace codegen {
 
@@ -307,4 +307,4 @@ private:
 
 } // namespace codegen
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

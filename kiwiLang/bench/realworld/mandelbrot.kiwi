@@ -554,7 +554,7 @@ fn c_str(s: string) -> *const i8 {
 
 // Main benchmark entry point
 fn main() -> i32 {
-    println("KLang Mandelbrot Benchmark Suite");
+    println("kiwiLang Mandelbrot Benchmark Suite");
     println("================================");
     println("");
     

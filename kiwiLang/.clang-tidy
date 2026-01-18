@@ -1,0 +1,75 @@
+
+Checks: >
+    *,
+    -altera-*,
+    -fuchsia-*,
+    -android-*,
+    -zircon-*,
+    -llvm-*,
+    -llvmlibc-*,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -readability-magic-numbers,
+    -cppcoreguidelines-pro-type-union-access,
+    -cppcoreguidelines-pro-bounds-constant-array-index,
+    -modernize-use-trailing-return-type,
+    -hicpp-no-assembler
+WarningsAsErrors: '*'
+CheckOptions:
+  - key:             modernize-use-nodiscard.CheckCVMutations
+    value:           '0'
+  - key:             misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value:           '1'
+  - key:             readability-identifier-naming.ClassCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.StructCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.EnumCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.UnionCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.FunctionCase
+    value:           camelBack
+  - key:             readability-identifier-naming.VariableCase
+    value:           camelBack
+  - key:             readability-identifier-naming.ConstantCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.MemberCase
+    value:           trailing_
+  - key:             readability-identifier-naming.GlobalConstantCase
+    value:           UPPER_CASE
+  - key:             readability-identifier-naming.GlobalVariableCase
+    value:           gCamelBack
+  - key:             readability-identifier-naming.NamespaceCase
+    value:           lower_case
+  - key:             readability-identifier-naming.TemplateParameterCase
+    value:           CamelCase
+  - key:             readability-identifier-naming.PrivateMemberSuffix
+    value:           _
+  - key:             readability-identifier-naming.ProtectedMemberSuffix
+    value:           _
+  - key:             cppcoreguidelines-avoid-c-arrays.AllowStringArrays
+    value:           'true'
+  - key:             readability-function-cognitive-complexity.Threshold
+    value:           '25'
+  - key:             readability-function-size.ComplexityThreshold
+    value:           '30'
+  - key:             readability-function-size.LineThreshold
+    value:           '60'
+  - key:             readability-function-size.StatementThreshold
+    value:           '40'
+  - key:             bugprone-exception-escape.AllowedExceptions
+    value:           'kiwiLang::CompilerError,kiwiLang::SemanticError,kiwiLang::CodeGenError,std::bad_alloc'
+  - key:             bugprone-reserved-identifier.AllowedIdentifiers
+    value:           '_,__capability'
+  - key:             misc-unused-parameters.IgnoreParametersInFunctionDefinitions
+    value:           'true'
+  - key:             modernize-use-nullptr.NullMacros
+    value:           'NULL'
+  - key:             modernize-pass-by-value.IncludeStyle
+    value:           llvm
+  - key:             performance-move-const-arg.CheckTriviallyCopyableMove
+    value:           'false'
+  - key:             readability-const-return-type.IgnoreMacros
+    value:           'true'
+HeaderFilterRegex: '^((?!test/|bench/).)*$'
+FormatStyle: file

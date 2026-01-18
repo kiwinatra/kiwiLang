@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <system_error>
 
-namespace klang {
+namespace kiwiLang {
 
 // Forward declarations
 class Module;
@@ -594,4 +594,4 @@ private:
     std::string symbol_;
 };
 
-} // namespace klang
+} // namespace kiwiLang

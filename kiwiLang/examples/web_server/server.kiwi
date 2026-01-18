@@ -1,0 +1,931 @@
+// Advanced Web Server Example for KiwiLang
+// Features: HTTP/HTTPS, WebSocket, REST API, Static Files, Middleware
+
+module web_server {
+    import http;
+    import https;
+    import fs;
+    import path;
+    import json;
+    import crypto;
+    import middleware;
+    import router;
+    
+    // Configuration
+    struct ServerConfig {
+        port: int,
+        host: string,
+        ssl: bool,
+        sslCert: string?,
+        sslKey: string?,
+        staticDir: string,
+        uploadDir: string,
+        maxUploadSize: int,
+        enableCors: bool,
+        enableCompression: bool,
+        enableLogging: bool,
+        workers: int,
+        timeout: int
+    }
+    
+    // Default configuration
+    const DEFAULT_CONFIG: ServerConfig = {
+        port: 8080,
+        host: "localhost",
+        ssl: false,
+        sslCert: null,
+        sslKey: null,
+        staticDir: "./public",
+        uploadDir: "./uploads",
+        maxUploadSize: 10 * 1024 * 1024, // 10MB
+        enableCors: true,
+        enableCompression: true,
+        enableLogging: true,
+        workers: 4,
+        timeout: 30000 // 30 seconds
+    };
+    
+    // Request context
+    class RequestContext {
+        var request: http.Request;
+        var response: http.Response;
+        var params: map[string, string];
+        var query: map[string, string];
+        var cookies: map[string, string];
+        var session: map[string, any]?;
+        var user: any?;
+        var startTime: int;
+        
+        init(request: http.Request, response: http.Response) {
+            this.request = request;
+            this.response = response;
+            this.params = {};
+            this.query = parseQuery(request.url.query);
+            this.cookies = parseCookies(request.headers.get("Cookie"));
+            this.startTime = time.now();
+        }
+        
+        func json(data: any, status: int = 200) -> void {
+            this.response.statusCode = status;
+            this.response.setHeader("Content-Type", "application/json");
+            this.response.write(json.stringify(data));
+        }
+        
+        func html(html: string, status: int = 200) -> void {
+            this.response.statusCode = status;
+            this.response.setHeader("Content-Type", "text/html; charset=utf-8");
+            this.response.write(html);
+        }
+        
+        func text(text: string, status: int = 200) -> void {
+            this.response.statusCode = status;
+            this.response.setHeader("Content-Type", "text/plain; charset=utf-8");
+            this.response.write(text);
+        }
+        
+        func file(filepath: string, contentType: string? = null) -> void {
+            try {
+                let stats = fs.stat(filepath);
+                if stats.isDirectory() {
+                    this.html("<h1>403 Forbidden</h1>", 403);
+                    return;
+                }
+                
+                let mimeType = contentType ?? getMimeType(filepath);
+                this.response.setHeader("Content-Type", mimeType);
+                this.response.setHeader("Content-Length", stats.size as string);
+                
+                let stream = fs.createReadStream(filepath);
+                stream.pipe(this.response);
+            } catch error {
+                this.html("<h1>404 Not Found</h1>", 404);
+            }
+        }
+        
+        func redirect(url: string, permanent: bool = false) -> void {
+            this.response.statusCode = if permanent then 301 else 302;
+            this.response.setHeader("Location", url);
+            this.response.end();
+        }
+        
+        func setCookie(name: string, value: string, options: map[string, any> = {}) -> void {
+            let cookie = buildCookie(name, value, options);
+            this.response.setHeader("Set-Cookie", cookie);
+        }
+        
+        func clearCookie(name: string) -> void {
+            this.setCookie(name, "", {maxAge: 0});
+        }
+        
+        func getHeader(name: string) -> string? {
+            return this.request.headers.get(name);
+        }
+        
+        func setHeader(name: string, value: string) -> void {
+            this.response.setHeader(name, value);
+        }
+        
+        func getQueryParam(name: string, defaultValue: string? = nil) -> string? {
+            return if this.query.contains(name) then this.query[name] else defaultValue;
+        }
+        
+        func getParam(name: string) -> string? {
+            return this.params[name];
+        }
+    }
+    
+    // WebSocket handler
+    class WebSocketHandler {
+        var connections: set[WebSocket];
+        
+        init() {
+            this.connections = {};
+        }
+        
+        func onConnection(ws: WebSocket, request: http.Request) -> void {
+            this.connections.add(ws);
+            
+            ws.on("message", (message: string) -> void {
+                this.broadcast(message, ws);
+            });
+            
+            ws.on("close", () -> void {
+                this.connections.delete(ws);
+            });
+            
+            ws.send("Connected to server");
+        }
+        
+        func broadcast(message: string, exclude: WebSocket? = null) -> void {
+            for ws in this.connections {
+                if ws != exclude {
+                    ws.send(message);
+                }
+            }
+        }
+        
+        func sendTo(ws: WebSocket, message: string) -> void {
+            if this.connections.contains(ws) {
+                ws.send(message);
+            }
+        }
+    }
+    
+    // Session manager
+    class SessionManager {
+        var sessions: map[string, map[string, any]];
+        var secret: string;
+        
+        init(secret: string) {
+            this.sessions = {};
+            this.secret = secret;
+        }
+        
+        func createSession(data: map[string, any]) -> string {
+            let sessionId = crypto.randomBytes(16).toString("hex");
+            this.sessions[sessionId] = {
+                "data": data,
+                "created": time.now(),
+                "lastAccessed": time.now()
+            };
+            return sessionId;
+        }
+        
+        func getSession(sessionId: string) -> map[string, any]? {
+            let session = this.sessions[sessionId];
+            if session != nil {
+                session["lastAccessed"] = time.now();
+            }
+            return session;
+        }
+        
+        func updateSession(sessionId: string, data: map[string, any]) -> void {
+            if this.sessions.contains(sessionId) {
+                this.sessions[sessionId]["data"] = data;
+            }
+        }
+        
+        func destroySession(sessionId: string) -> void {
+            this.sessions.delete(sessionId);
+        }
+        
+        func cleanup(maxAge: int = 3600000) -> void {
+            let now = time.now();
+            for (sessionId, session) in this.sessions {
+                if now - session["lastAccessed"] > maxAge {
+                    this.sessions.delete(sessionId);
+                }
+            }
+        }
+    }
+    
+    // File upload handler
+    class UploadHandler {
+        var uploadDir: string;
+        var maxSize: int;
+        
+        init(uploadDir: string, maxSize: int) {
+            this.uploadDir = uploadDir;
+            this.maxSize = maxSize;
+            
+            // Ensure upload directory exists
+            if !fs.exists(uploadDir) {
+                fs.mkdir(uploadDir, {recursive: true});
+            }
+        }
+        
+        func handleUpload(context: RequestContext) -> map[string, any]? {
+            let contentType = context.getHeader("Content-Type");
+            
+            if contentType == nil || !contentType!.startsWith("multipart/form-data") {
+                return null;
+            }
+            
+            let boundary = extractBoundary(contentType!);
+            if boundary == nil {
+                return null;
+            }
+            
+            let body = context.request.body;
+            if body.length > this.maxSize {
+                return {"error": "File too large"};
+            }
+            
+            let parts = parseMultipart(body, boundary!);
+            var result = {
+                "fields": {} as map[string, string],
+                "files": {} as map[string, map[string, any]]
+            };
+            
+            for part in parts {
+                if part.filename != nil {
+                    // File upload
+                    let filename = this.sanitizeFilename(part.filename!);
+                    let filepath = path.join(this.uploadDir, filename);
+                    
+                    fs.writeFile(filepath, part.data);
+                    
+                    result.files[part.name] = {
+                        "filename": filename,
+                        "originalName": part.filename,
+                        "size": part.data.length,
+                        "mimeType": part.headers["Content-Type"] ?? "application/octet-stream",
+                        "path": filepath
+                    };
+                } else {
+                    // Form field
+                    result.fields[part.name] = part.data.toString("utf-8");
+                }
+            }
+            
+            return result;
+        }
+        
+        private func sanitizeFilename(filename: string) -> string {
+            // Remove path traversal attempts
+            let clean = filename.replace(/\.\./g, "")
+                               .replace(/[\/\\]/g, "_");
+            
+            // Add timestamp for uniqueness
+            let ext = path.extname(clean);
+            let name = path.basename(clean, ext);
+            let timestamp = time.now();
+            
+            return `${name}_${timestamp}${ext}`;
+        }
+    }
+    
+    // Rate limiter
+    class RateLimiter {
+        var limits: map[string, [int]]; // IP -> timestamps
+        var windowMs: int;
+        var maxRequests: int;
+        
+        init(windowMs: int = 60000, maxRequests: int = 100) {
+            this.limits = {};
+            this.windowMs = windowMs;
+            this.maxRequests = maxRequests;
+        }
+        
+        func isAllowed(ip: string) -> bool {
+            let now = time.now();
+            let timestamps = if this.limits.contains(ip) then this.limits[ip] else [];
+            
+            // Remove old timestamps
+            let recent = timestamps.filter(t => now - t < this.windowMs);
+            
+            if recent.length >= this.maxRequests {
+                return false;
+            }
+            
+            recent.push(now);
+            this.limits[ip] = recent;
+            
+            // Cleanup old entries periodically
+            if now % 60000 == 0 { // Every minute
+                this.cleanup();
+            }
+            
+            return true;
+        }
+        
+        private func cleanup() -> void {
+            let now = time.now();
+            for (ip, timestamps) in this.limits {
+                let recent = timestamps.filter(t => now - t < this.windowMs);
+                if recent.length == 0 {
+                    this.limits.delete(ip);
+                } else {
+                    this.limits[ip] = recent;
+                }
+            }
+        }
+    }
+    
+    // Main server class
+    class WebServer {
+        var config: ServerConfig;
+        var server: http.Server | https.Server;
+        var wsHandler: WebSocketHandler;
+        var sessionManager: SessionManager;
+        var uploadHandler: UploadHandler;
+        var rateLimiter: RateLimiter;
+        var router: router.Router;
+        var middlewareChain: middleware.MiddlewareChain;
+        
+        init(config: ServerConfig = DEFAULT_CONFIG) {
+            this.config = config;
+            
+            // Initialize handlers
+            this.wsHandler = WebSocketHandler();
+            this.sessionManager = SessionManager(crypto.randomBytes(32).toString("hex"));
+            this.uploadHandler = UploadHandler(config.uploadDir, config.maxUploadSize);
+            this.rateLimiter = RateLimiter();
+            this.router = router.createExampleRouter();
+            this.middlewareChain = middleware.createApp();
+            
+            // Create server
+            if config.ssl && config.sslCert != null && config.sslKey != null {
+                let options = {
+                    key: fs.readFile(config.sslKey!),
+                    cert: fs.readFile(config.sslCert!)
+                };
+                this.server = https.createServer(options, this.handleRequest.bind(this));
+            } else {
+                this.server = http.createServer(this.handleRequest.bind(this));
+            }
+            
+            // Setup WebSocket
+            if http.WebSocketServer != nil {
+                let wss = http.WebSocketServer({server: this.server});
+                wss.on("connection", this.wsHandler.onConnection.bind(this.wsHandler));
+            }
+            
+            // Schedule cleanup tasks
+            setInterval(() -> {
+                this.sessionManager.cleanup();
+            }, 3600000); // Every hour
+        }
+        
+        private func handleRequest(request: http.Request, response: http.Response) -> void {
+            let context = RequestContext(request, response);
+            
+            // Add timing header
+            response.setHeader("X-Response-Time", "?ms");
+            
+            // Rate limiting
+            let clientIp = request.socket.remoteAddress ?? "unknown";
+            if !this.rateLimiter.isAllowed(clientIp) {
+                context.json({"error": "Too many requests"}, 429);
+                return;
+            }
+            
+            // Parse request body if needed
+            if request.method != "GET" && request.method != "HEAD" {
+                this.parseRequestBody(request).then((body: string) -> void {
+                    request.body = body;
+                    this.processRequest(context);
+                }).catch((error: Error) -> void {
+                    context.json({"error": "Invalid request body"}, 400);
+                });
+            } else {
+                this.processRequest(context);
+            }
+        }
+        
+        private func processRequest(context: RequestContext) -> void {
+            try {
+                // Apply middleware
+                let mwResponse = this.middlewareChain.handle(context.request);
+                
+                if mwResponse != null {
+                    context.response.statusCode = mwResponse.status;
+                    for (name, value) in mwResponse.headers {
+                        context.response.setHeader(name, value);
+                    }
+                    context.response.write(mwResponse.body);
+                    context.response.end();
+                    return;
+                }
+                
+                // Handle request
+                let path = context.request.url.path;
+                
+                // Static files
+                if path.startsWith("/static/") {
+                    let filepath = path.substring(7); // Remove "/static/"
+                    let fullpath = path.join(this.config.staticDir, filepath);
+                    context.file(fullpath);
+                    return;
+                }
+                
+                // API routes via router
+                let routerResponse = this.router.handleRequest(context.request);
+                if routerResponse != null {
+                    context.response.statusCode = routerResponse.status;
+                    for (name, value) in routerResponse.headers {
+                        context.response.setHeader(name, value);
+                    }
+                    context.response.write(routerResponse.body);
+                    context.response.end();
+                    return;
+                }
+                
+                // Default routes
+                match path {
+                    case "/" => this.handleRoot(context),
+                    case "/api/health" => this.handleHealth(context),
+                    case "/api/upload" => this.handleUpload(context),
+                    case "/api/session" => this.handleSession(context),
+                    case "/ws" => this.handleWebSocketUpgrade(context),
+                    case _ => this.handleNotFound(context)
+                }
+            } catch error {
+                this.handleError(context, error);
+            }
+            
+            // Update timing header
+            let duration = time.now() - context.startTime;
+            context.response.setHeader("X-Response-Time", duration as string + "ms");
+        }
+        
+        private func handleRoot(context: RequestContext) -> void {
+            let html = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>KiwiLang Web Server</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 40px; }
+                        h1 { color: #333; }
+                        .endpoint { background: #f5f5f5; padding: 10px; margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <h1>KiwiLang Web Server</h1>
+                    <p>Welcome to the advanced web server example!</p>
+                    
+                    <h2>Available Endpoints:</h2>
+                    <div class="endpoint">
+                        <strong>GET /api/health</strong> - Health check
+                    </div>
+                    <div class="endpoint">
+                        <strong>POST /api/upload</strong> - File upload
+                    </div>
+                    <div class="endpoint">
+                        <strong>GET /api/session</strong> - Session management
+                    </div>
+                    <div class="endpoint">
+                        <strong>WS /ws</strong> - WebSocket endpoint
+                    </div>
+                    <div class="endpoint">
+                        <strong>GET /static/{file}</strong> - Static files
+                    </div>
+                    
+                    <h2>Try WebSocket:</h2>
+                    <input id="message" placeholder="Type a message">
+                    <button onclick="sendMessage()">Send</button>
+                    <div id="output"></div>
+                    
+                    <script>
+                        const ws = new WebSocket('ws://' + window.location.host + '/ws');
+                        ws.onmessage = (event) => {
+                            document.getElementById('output').innerHTML += '<div>' + event.data + '</div>';
+                        };
+                        
+                        function sendMessage() {
+                            const message = document.getElementById('message').value;
+                            ws.send(message);
+                            document.getElementById('message').value = '';
+                        }
+                    </script>
+                </body>
+                </html>
+            """;
+            
+            context.html(html);
+        }
+        
+        private func handleHealth(context: RequestContext) -> void {
+            context.json({
+                "status": "healthy",
+                "timestamp": time.now(),
+                "uptime": process.uptime(),
+                "memory": process.memoryUsage(),
+                "config": {
+                    "port": this.config.port,
+                    "host": this.config.host,
+                    "ssl": this.config.ssl
+                }
+            });
+        }
+        
+        private func handleUpload(context: RequestContext) -> void {
+            if context.request.method != "POST" {
+                context.json({"error": "Method not allowed"}, 405);
+                return;
+            }
+            
+            let result = this.uploadHandler.handleUpload(context);
+            if result == nil {
+                context.json({"error": "Invalid upload"}, 400);
+                return;
+            }
+            
+            if result!.contains("error") {
+                context.json(result, 400);
+                return;
+            }
+            
+            context.json({
+                "message": "Upload successful",
+                "files": result!.files,
+                "fields": result!.fields
+            });
+        }
+        
+        private func handleSession(context: RequestContext) -> void {
+            let sessionId = context.cookies["sessionId"];
+            
+            match context.request.method {
+                case "POST" => {
+                    // Create new session
+                    let data = try json.parse(context.request.body);
+                    let newSessionId = this.sessionManager.createSession(data);
+                    
+                    context.setCookie("sessionId", newSessionId, {
+                        httpOnly: true,
+                        maxAge: 3600000
+                    });
+                    
+                    context.json({
+                        "message": "Session created",
+                        "sessionId": newSessionId
+                    });
+                },
+                case "GET" => {
+                    // Get session data
+                    if sessionId == nil {
+                        context.json({"error": "No session"}, 401);
+                        return;
+                    }
+                    
+                    let session = this.sessionManager.getSession(sessionId!);
+                    if session == nil {
+                        context.json({"error": "Invalid session"}, 401);
+                        return;
+                    }
+                    
+                    context.json({
+                        "session": session
+                    });
+                },
+                case "PUT" => {
+                    // Update session
+                    if sessionId == nil {
+                        context.json({"error": "No session"}, 401);
+                        return;
+                    }
+                    
+                    let data = try json.parse(context.request.body);
+                    this.sessionManager.updateSession(sessionId!, data);
+                    
+                    context.json({
+                        "message": "Session updated"
+                    });
+                },
+                case "DELETE" => {
+                    // Destroy session
+                    if sessionId != nil {
+                        this.sessionManager.destroySession(sessionId!);
+                        context.clearCookie("sessionId");
+                    }
+                    
+                    context.json({
+                        "message": "Session destroyed"
+                    });
+                },
+                case _ => {
+                    context.json({"error": "Method not allowed"}, 405);
+                }
+            }
+        }
+        
+        private func handleWebSocketUpgrade(context: RequestContext) -> void {
+            // WebSocket upgrade is handled by WebSocketServer
+            context.text("WebSocket endpoint - connect using WebSocket protocol", 426);
+        }
+        
+        private func handleNotFound(context: RequestContext) -> void {
+            context.html("""
+                <h1>404 Not Found</h1>
+                <p>The requested URL ${context.request.url.path} was not found on this server.</p>
+            """, 404);
+        }
+        
+        private func handleError(context: RequestContext, error: Error) -> void {
+            print(`Error: ${error.message}\n${error.stack}`);
+            
+            context.html("""
+                <h1>500 Internal Server Error</h1>
+                <p>Something went wrong on our end.</p>
+            """, 500);
+        }
+        
+        private func parseRequestBody(request: http.Request) -> Promise<string> {
+            return new Promise((resolve, reject) -> void {
+                let body = "";
+                let size = 0;
+                
+                request.on("data", (chunk: string) -> void {
+                    size += chunk.length;
+                    if size > this.config.maxUploadSize {
+                        reject(new Error("Request body too large"));
+                        request.destroy();
+                    }
+                    body += chunk;
+                });
+                
+                request.on("end", () -> void {
+                    resolve(body);
+                });
+                
+                request.on("error", (error: Error) -> void {
+                    reject(error);
+                });
+            });
+        }
+        
+        // Utility methods
+        private func getMimeType(filename: string) -> string {
+            let ext = path.extname(filename).toLower();
+            
+            let mimeTypes = {
+                ".html": "text/html",
+                ".htm": "text/html",
+                ".css": "text/css",
+                ".js": "application/javascript",
+                ".json": "application/json",
+                ".png": "image/png",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".gif": "image/gif",
+                ".svg": "image/svg+xml",
+                ".ico": "image/x-icon",
+                ".txt": "text/plain",
+                ".pdf": "application/pdf"
+            } as map[string, string];
+            
+            return if mimeTypes.contains(ext) then mimeTypes[ext] else "application/octet-stream";
+        }
+        
+        private func parseQuery(query: string) -> map[string, string] {
+            var result = {} as map[string, string];
+            
+            if query.length == 0 {
+                return result;
+            }
+            
+            let pairs = query.split("&");
+            for pair in pairs {
+                let parts = pair.split("=");
+                if parts.length == 2 {
+                    result[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+                }
+            }
+            
+            return result;
+        }
+        
+        private func parseCookies(cookieHeader: string?) -> map[string, string] {
+            var cookies = {} as map[string, string];
+            
+            if cookieHeader == nil {
+                return cookies;
+            }
+            
+            let pairs = cookieHeader!.split(";");
+            for pair in pairs {
+                let trimmed = pair.trim();
+                let parts = trimmed.split("=", 2);
+                if parts.length == 2 {
+                    cookies[parts[0].trim()] = parts[1].trim();
+                }
+            }
+            
+            return cookies;
+        }
+        
+        private func buildCookie(name: string, value: string, options: map[string, any>) -> string {
+            var parts = [`${name}=${encodeURIComponent(value)}`];
+            
+            if options.contains("maxAge") {
+                parts.push(`Max-Age=${options["maxAge"]}`);
+            }
+            
+            if options.contains("expires") {
+                parts.push(`Expires=${options["expires"]}`);
+            }
+            
+            if options.contains("path") {
+                parts.push(`Path=${options["path"]}`);
+            }
+            
+            if options.contains("domain") {
+                parts.push(`Domain=${options["domain"]}`);
+            }
+            
+            if options.contains("secure") && options["secure"] {
+                parts.push("Secure");
+            }
+            
+            if options.contains("httpOnly") && options["httpOnly"] {
+                parts.push("HttpOnly");
+            }
+            
+            if options.contains("sameSite") {
+                parts.push(`SameSite=${options["sameSite"]}`);
+            }
+            
+            return parts.join("; ");
+        }
+        
+        // Server control
+        func start() -> void {
+            this.server.listen(this.config.port, this.config.host, () -> void {
+                let protocol = if this.config.ssl then "https" else "http";
+                print(`Server running at ${protocol}://${this.config.host}:${this.config.port}`);
+                print(`Static files from: ${this.config.staticDir}`);
+                print(`Upload directory: ${this.config.uploadDir}`);
+                print("Press Ctrl+C to stop");
+            });
+        }
+        
+        func stop() -> void {
+            this.server.close(() -> void {
+                print("Server stopped");
+            });
+        }
+        
+        func reload() -> void {
+            print("Reloading server configuration...");
+            // In a real implementation, this would reload config and restart
+        }
+    }
+    
+    // Command line interface
+    pub func main(args: [string]) -> int {
+        print("KiwiLang Advanced Web Server");
+        print("=============================");
+        
+        // Parse command line arguments
+        var config = DEFAULT_CONFIG;
+        var configFile: string? = null;
+        
+        for var i = 1; i < args.length; i = i + 1 {
+            match args[i] {
+                case "--port" => {
+                    if i + 1 < args.length {
+                        config.port = args[i + 1] as int;
+                        i = i + 1;
+                    }
+                },
+                case "--host" => {
+                    if i + 1 < args.length {
+                        config.host = args[i + 1];
+                        i = i + 1;
+                    }
+                },
+                case "--ssl" => {
+                    config.ssl = true;
+                },
+                case "--cert" => {
+                    if i + 1 < args.length {
+                        config.sslCert = args[i + 1];
+                        i = i + 1;
+                    }
+                },
+                case "--key" => {
+                    if i + 1 < args.length {
+                        config.sslKey = args[i + 1];
+                        i = i + 1;
+                    }
+                },
+                case "--static" => {
+                    if i + 1 < args.length {
+                        config.staticDir = args[i + 1];
+                        i = i + 1;
+                    }
+                },
+                case "--config" => {
+                    if i + 1 < args.length {
+                        configFile = args[i + 1];
+                        i = i + 1;
+                    }
+                },
+                case "--help" => {
+                    printHelp();
+                    return 0;
+                },
+                case _ => {
+                    print(`Unknown option: ${args[i]}`);
+                    print("Use --help for usage information");
+                    return 1;
+                }
+            }
+        }
+        
+        // Load config file if specified
+        if configFile != nil {
+            try {
+                let fileConfig = json.parse(fs.readFile(configFile!));
+                // Merge with command line config
+                config = mergeConfigs(config, fileConfig as ServerConfig);
+            } catch error {
+                print(`Error loading config file: ${error.message}`);
+                return 1;
+            }
+        }
+        
+        // Create and start server
+        let server = WebServer(config);
+        
+        // Handle signals
+        process.on("SIGINT", () -> void {
+            print("\nShutting down...");
+            server.stop();
+            process.exit(0);
+        });
+        
+        process.on("SIGTERM", () -> void {
+            server.stop();
+        });
+        
+        process.on("SIGHUP", () -> void {
+            server.reload();
+        });
+        
+        // Start server
+        server.start();
+        
+        return 0;
+    }
+    
+    // Helper functions
+    private func printHelp() -> void {
+        print("Usage: web_server [options]");
+        print("");
+        print("Options:");
+        print("  --port PORT      Port to listen on (default: 8080)");
+        print("  --host HOST      Host to bind to (default: localhost)");
+        print("  --ssl            Enable HTTPS");
+        print("  --cert FILE      SSL certificate file");
+        print("  --key FILE       SSL private key file");
+        print("  --static DIR     Static files directory (default: ./public)");
+        print("  --config FILE    Configuration file (JSON)");
+        print("  --help           Show this help message");
+    }
+    
+    private func mergeConfigs(base: ServerConfig, overlay: ServerConfig) -> ServerConfig {
+        return {
+            port: if overlay.port != 0 then overlay.port else base.port,
+            host: if overlay.host.length > 0 then overlay.host else base.host,
+            ssl: overlay.ssl ?? base.ssl,
+            sslCert: overlay.sslCert ?? base.sslCert,
+            sslKey: overlay.sslKey ?? base.sslKey,
+            staticDir: if overlay.staticDir.length > 0 then overlay.staticDir else base.staticDir,
+            uploadDir: if overlay.uploadDir.length > 0 then overlay.uploadDir else base.uploadDir,
+            maxUploadSize: if overlay.maxUploadSize != 0 then overlay.maxUploadSize else base.maxUploadSize,
+            enableCors: overlay.enableCors ?? base.enableCors,
+            enableCompression: overlay.enableCompression ?? base.enableCompression,
+            enableLogging: overlay.enableLogging ?? base.enableLogging,
+            workers: if overlay.workers != 0 then overlay.workers else base.workers,
+            timeout: if overlay.timeout != 0 then overlay.timeout else base.timeout
+        };
+    }
+}
+
+// Export main function
+pub func main(args: [string]) -> int {
+    return web_server.main(args);
+}

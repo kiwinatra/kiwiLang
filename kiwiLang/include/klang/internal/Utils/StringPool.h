@@ -9,7 +9,7 @@
 #include <memory>
 #include <mutex>
 
-namespace klang {
+namespace kiwiLang {
 
 class StringPool {
 public:
@@ -387,4 +387,4 @@ inline bool StringPool::ConstIterator::operator!=(const ConstIterator& other) co
     return !(*this == other);
 }
 
-} // namespace klang
+} // namespace kiwiLang

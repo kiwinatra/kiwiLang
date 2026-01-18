@@ -1,13 +1,13 @@
-include/klang/internal/Lexer/Scanner.h
+include/kiwiLang/internal/Lexer/Scanner.h
 #pragma once
 #include "Token.h"
-#include "klang/internal/Diagnostics/Diagnostic.h"
+#include "kiwiLang/internal/Diagnostics/Diagnostic.h"
 #include <string_view>
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 
 class Scanner {
@@ -140,4 +140,4 @@ private:
 };
 
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

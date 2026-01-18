@@ -1,12 +1,12 @@
-include/klang/internal/Lexer/Token.h
+include/kiwiLang/internal/Lexer/Token.h
 #pragma once
 #include <string>
 #include <string_view>
 #include <variant>
 #include <cstdint>
-#include "klang/internal/Utils/SourceLocation.h"
+#include "kiwiLang/internal/Utils/SourceLocation.h"
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 
 enum class TokenType : uint16_t {
@@ -155,4 +155,4 @@ struct TokenEqual {
 };
 
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

@@ -1,4 +1,4 @@
-include/klang/internal/Runtime/HashTable.h
+include/kiwiLang/internal/Runtime/HashTable.h
 #pragma once
 #include "Object.h"
 #include "Value.h"
@@ -7,7 +7,7 @@ include/klang/internal/Runtime/HashTable.h
 #include <memory>
 #include <utility>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace runtime {
 
@@ -169,4 +169,4 @@ private:
 
 } // namespace runtime
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

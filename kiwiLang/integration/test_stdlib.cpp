@@ -1,22 +1,22 @@
-integration/test_stdlib.cpp
-#include "klang/StdLib/Runtime.h"
-#include "klang/StdLib/IO.h"
-#include "klang/StdLib/Math.h"
-#include "klang/StdLib/String.h"
-#include "klang/StdLib/Array.h"
-#include "klang/StdLib/Map.h"
-#include "klang/StdLib/Time.h"
-#include "klang/StdLib/Thread.h"
-#include "klang/StdLib/File.h"
-#include "klang/StdLib/Network.h"
-#include "klang/StdLib/Regex.h"
+
+#include "kiwiLang/StdLib/Runtime.h"
+#include "kiwiLang/StdLib/IO.h"
+#include "kiwiLang/StdLib/Math.h"
+#include "kiwiLang/StdLib/String.h"
+#include "kiwiLang/StdLib/Array.h"
+#include "kiwiLang/StdLib/Map.h"
+#include "kiwiLang/StdLib/Time.h"
+#include "kiwiLang/StdLib/Thread.h"
+#include "kiwiLang/StdLib/File.h"
+#include "kiwiLang/StdLib/Network.h"
+#include "kiwiLang/StdLib/Regex.h"
 #include <gtest/gtest.h>
 #include <memory>
 #include <thread>
 #include <chrono>
 #include <fstream>
 
-using namespace klang;
+using namespace kiwiLang;
 
 class StdLibTest : public ::testing::Test {
 protected:

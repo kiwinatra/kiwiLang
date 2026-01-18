@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <functional>
 
-namespace klang {
+namespace kiwiLang {
 
 class Type;
 class ASTNode;
@@ -205,4 +205,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace klang
+} // namespace kiwiLang

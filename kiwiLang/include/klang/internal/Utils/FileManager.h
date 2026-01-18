@@ -10,7 +10,7 @@
 #include <system_error>
 #include <filesystem>
 
-namespace klang {
+namespace kiwiLang {
 
 namespace fs = std::filesystem;
 
@@ -350,4 +350,4 @@ inline ChangeType operator&(ChangeType a, ChangeType b) {
     return static_cast<ChangeType>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
 }
 
-} // namespace klang
+} // namespace kiwiLang

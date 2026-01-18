@@ -1,8 +1,8 @@
-integration/test_compiler.cpp
-#include "klang/Compiler/Compiler.h"
-#include "klang/Compiler/Driver.h"
-#include "klang/Parser/Parser.h"
-#include "klang/CodeGen/CodeGenerator.h"
+
+#include "kiwiLang/Compiler/Compiler.h"
+#include "kiwiLang/Compiler/Driver.h"
+#include "kiwiLang/Parser/Parser.h"
+#include "kiwiLang/CodeGen/CodeGenerator.h"
 #include <gtest/gtest.h>
 #include <filesystem>
 #include <fstream>
@@ -13,8 +13,8 @@ namespace fs = std::filesystem;
 class CompilerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        compiler_ = std::make_unique<klang::Compiler>();
-        driver_ = std::make_unique<klang::Driver>();
+        compiler_ = std::make_unique<kiwiLang::Compiler>();
+        driver_ = std::make_unique<kiwiLang::Driver>();
         
         tempDir_ = fs::temp_directory_path() / "kiwilang_test";
         fs::create_directories(tempDir_);
@@ -30,7 +30,7 @@ protected:
         file << source;
         file.close();
         
-        klang::CompileOptions options;
+        kiwiLang::CompileOptions options;
         options.inputFile = filename;
         options.outputFile = (tempDir_ / "test.o").string();
         options.emitLLVMIR = true;
@@ -50,8 +50,8 @@ protected:
         return irContent;
     }
     
-    std::unique_ptr<klang::Compiler> compiler_;
-    std::unique_ptr<klang::Driver> driver_;
+    std::unique_ptr<kiwiLang::Compiler> compiler_;
+    std::unique_ptr<kiwiLang::Driver> driver_;
     fs::path tempDir_;
 };
 
@@ -269,7 +269,7 @@ TEST_F(CompilerTest, Modules) {
     file2 << module2;
     file2.close();
     
-    klang::CompileOptions options;
+    kiwiLang::CompileOptions options;
     options.inputFile = module2Path.string();
     options.outputFile = (tempDir_ / "module_test.o").string();
     options.emitLLVMIR = true;
@@ -309,11 +309,11 @@ TEST_F(CompilerTest, Optimization) {
         }
     )";
     
-    klang::CompileOptions options;
+    kiwiLang::CompileOptions options;
     options.inputFile = (tempDir_ / "opt_test.kwl").string();
     options.outputFile = (tempDir_ / "opt_test.o").string();
     options.emitLLVMIR = true;
-    options.optimizationLevel = klang::OptimizationLevel::O2;
+    options.optimizationLevel = kiwiLang::OptimizationLevel::O2;
     
     std::ofstream file(options.inputFile);
     file << source;
@@ -344,10 +344,10 @@ TEST_F(CompilerTest, CodeGeneration) {
         }
     )";
     
-    klang::CompileOptions options;
+    kiwiLang::CompileOptions options;
     options.inputFile = (tempDir_ / "fib.kwl").string();
     options.outputFile = (tempDir_ / "fib").string();
-    options.outputType = klang::OutputType::EXECUTABLE;
+    options.outputType = kiwiLang::OutputType::EXECUTABLE;
     
     std::ofstream file(options.inputFile);
     file << source;
@@ -432,10 +432,10 @@ TEST_F(CompilerTest, StandardLibrary) {
         }
     )";
     
-    klang::CompileOptions options;
+    kiwiLang::CompileOptions options;
     options.inputFile = (tempDir_ / "stdlib_test.kwl").string();
     options.outputFile = (tempDir_ / "stdlib_test").string();
-    options.outputType = klang::OutputType::EXECUTABLE;
+    options.outputType = kiwiLang::OutputType::EXECUTABLE;
     options.linkStdlib = true;
     
     std::ofstream file(options.inputFile);
@@ -452,7 +452,7 @@ int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     
     // Initialize compiler
-    klang::Compiler::initialize();
+    kiwiLang::Compiler::initialize();
     
     return RUN_ALL_TESTS();
 }

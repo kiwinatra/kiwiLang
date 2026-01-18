@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace klang {
+namespace kiwiLang {
 
 // Forward declarations
 class VirtualMachine;
@@ -193,7 +193,7 @@ enum class RuntimeEvent {
 // Event callback type
 using RuntimeEventCallback = void(*)(RuntimeEvent event, void* data, size_t size, void* user_data);
 
-// Runtime context - main interface to KLang runtime
+// Runtime context - main interface to kiwiLang runtime
 class Runtime {
 public:
     Runtime();
@@ -426,4 +426,4 @@ private:
 using RuntimePtr = std::unique_ptr<Runtime>;
 using RuntimeRef = Runtime&;
 
-} // namespace klang
+} // namespace kiwiLang

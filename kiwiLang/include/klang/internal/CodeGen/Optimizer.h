@@ -1,4 +1,4 @@
-include/klang/internal/CodeGen/Optimizer.h
+include/kiwiLang/internal/CodeGen/Optimizer.h
 #pragma once
 #include "IR.h"
 #include "Analysis.h"
@@ -7,7 +7,7 @@ include/klang/internal/CodeGen/Optimizer.h
 #include <unordered_map>
 #include <unordered_set>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace codegen {
 
@@ -271,4 +271,4 @@ private:
 
 } // namespace codegen
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

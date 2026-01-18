@@ -1,11 +1,11 @@
-include/klang/internal/Runtime/Object.h
+include/kiwiLang/internal/Runtime/Object.h
 #pragma once
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <memory>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace runtime {
 
@@ -181,4 +181,4 @@ private:
 
 } // namespace runtime
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

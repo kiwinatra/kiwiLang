@@ -332,7 +332,7 @@ fn run_prime_benchmarks() {
 
 // Main benchmark entry point
 fn main() -> i32 {
-    println("KLang Prime Number Benchmark Suite");
+    println("kiwiLang Prime Number Benchmark Suite");
     println("==================================");
     println("");
     

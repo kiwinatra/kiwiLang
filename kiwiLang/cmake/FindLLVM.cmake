@@ -128,7 +128,7 @@ if(LLVM_CONFIG_EXECUTABLE)
     # Find specific LLVM libraries
     set(LLVM_LIBRARIES "")
     
-    # Core LLVM libraries needed by KLang
+    # Core LLVM libraries needed by kiwiLang
     set(LLVM_LIBRARY_NAMES
         LLVMCore
         LLVMSupport
@@ -252,7 +252,7 @@ else()
         # Get libraries using llvm_map_components_to_libnames
         include_directories(${LLVM_INCLUDE_DIRS})
         
-        # Define required components for KLang
+        # Define required components for kiwiLang
         set(LLVM_REQUIRED_COMPONENTS
             core
             support

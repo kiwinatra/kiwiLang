@@ -1,9 +1,9 @@
 // main execution lib. it COULD be changed
-#include "klang/Compiler/Driver.h"
-#include "klang/Compiler/Version.h"
-#include "klang/Utils/FileSystem.h"
-#include "klang/Utils/CommandLine.h"
-#include "klang/Utils/ErrorHandler.h"
+#include "kiwiLang/Compiler/Driver.h"
+#include "kiwiLang/Compiler/Version.h"
+#include "kiwiLang/Utils/FileSystem.h"
+#include "kiwiLang/Utils/CommandLine.h"
+#include "kiwiLang/Utils/ErrorHandler.h"
 #include <iostream>
 #include <memory>
 #include <cstdlib>
@@ -12,7 +12,7 @@
 #include <windows.h>
 #endif
 
-using namespace klang;
+using namespace kiwiLang;
 
 void printBanner() {
     std::cout << "\n";

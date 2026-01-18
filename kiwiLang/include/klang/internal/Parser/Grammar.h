@@ -1,15 +1,15 @@
-include/klang/internal/Parser/Grammar.h
+include/kiwiLang/internal/Parser/Grammar.h
 #pragma once
-#include "klang/internal/Lexer/Token.h"
-#include "klang/internal/AST/Expr.h"
-#include "klang/internal/AST/Stmt.h"
-#include "klang/internal/Diagnostics/Diagnostic.h"
+#include "kiwiLang/internal/Lexer/Token.h"
+#include "kiwiLang/internal/AST/Expr.h"
+#include "kiwiLang/internal/AST/Stmt.h"
+#include "kiwiLang/internal/Diagnostics/Diagnostic.h"
 #include <memory>
 #include <vector>
 #include <unordered_map>
 #include <type_traits>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 
 class GrammarProduction {
@@ -254,4 +254,4 @@ private:
 };
 
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

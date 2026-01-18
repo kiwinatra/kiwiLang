@@ -1,0 +1,897 @@
+// Web Server Middleware Framework
+// Advanced middleware system for KiwiLang web server
+
+module middleware {
+    import http;
+    import json;
+    
+    // Types
+    type Middleware = (Context) -> Response?;
+    type ErrorHandler = (Context, Error) -> Response;
+    type RouteHandler = (Context) -> Response;
+    
+    // Context passed through middleware chain
+    class Context {
+        var request: http.Request;
+        var response: Response?;
+        var state: map[string, any];
+        var params: map[string, string];
+        var query: map[string, string];
+        var cookies: map[string, string];
+        var headers: map[string, string];
+        var user: any?;
+        var startTime: int;
+        
+        init(request: http.Request) {
+            this.request = request;
+            this.state = {};
+            this.params = {};
+            this.query = parseQuery(request.url.query);
+            this.cookies = parseCookies(request.headers.get("Cookie"));
+            this.headers = {};
+            this.startTime = time.now();
+        }
+        
+        func json(data: any) -> Response {
+            return Response {
+                status: 200,
+                headers: {"Content-Type": "application/json"},
+                body: json.stringify(data)
+            };
+        }
+        
+        func html(html: string) -> Response {
+            return Response {
+                status: 200,
+                headers: {"Content-Type": "text/html; charset=utf-8"},
+                body: html
+            };
+        }
+        
+        func text(text: string) -> Response {
+            return Response {
+                status: 200,
+                headers: {"Content-Type": "text/plain; charset=utf-8"},
+                body: text
+            };
+        }
+        
+        func redirect(url: string, permanent: bool = false) -> Response {
+            return Response {
+                status: if permanent then 301 else 302,
+                headers: {"Location": url},
+                body: ""
+            };
+        }
+        
+        func setCookie(name: string, value: string, options: CookieOptions = {}) -> void {
+            let cookie = buildCookie(name, value, options);
+            this.response.headers["Set-Cookie"] = cookie;
+        }
+        
+        func clearCookie(name: string) -> void {
+            this.setCookie(name, "", {maxAge: 0});
+        }
+        
+        func getHeader(name: string) -> string? {
+            return this.request.headers.get(name);
+        }
+        
+        func setHeader(name: string, value: string) -> void {
+            if this.response == nil {
+                this.response = Response{status: 200, headers: {}, body: ""};
+            }
+            this.response.headers[name] = value;
+        }
+        
+        func attachment(filename: string) -> void {
+            this.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+        }
+        
+        func getQueryParam(name: string, defaultValue: string? = nil) -> string? {
+            return if this.query.contains(name) then this.query[name] else defaultValue;
+        }
+        
+        func getParam(name: string) -> string? {
+            return this.params[name];
+        }
+        
+        func next() -> void {
+            // Signal to continue to next middleware
+        }
+        
+        func end() -> void {
+            // Signal to end middleware chain
+        }
+    }
+    
+    struct CookieOptions {
+        maxAge: int?,
+        expires: string?,
+        path: string?,
+        domain: string?,
+        secure: bool?,
+        httpOnly: bool?,
+        sameSite: string? // "Strict", "Lax", "None"
+    }
+    
+    struct Response {
+        status: int,
+        headers: map[string, string],
+        body: string
+    }
+    
+    // Middleware chain
+    class MiddlewareChain {
+        var middlewares: [Middleware];
+        var errorHandlers: [ErrorHandler];
+        
+        init() {
+            this.middlewares = [];
+            this.errorHandlers = [];
+        }
+        
+        func use(middleware: Middleware) -> MiddlewareChain {
+            this.middlewares.push(middleware);
+            return this;
+        }
+        
+        func useError(handler: ErrorHandler) -> MiddlewareChain {
+            this.errorHandlers.push(handler);
+            return this;
+        }
+        
+        func handle(request: http.Request) -> Response {
+            let context = Context(request);
+            
+            try {
+                for middleware in this.middlewares {
+                    let result = middleware(context);
+                    if result != nil {
+                        context.response = result;
+                        break;
+                    }
+                }
+            } catch error {
+                context.response = this.handleError(context, error);
+            }
+            
+            // Ensure response exists
+            if context.response == nil {
+                context.response = Response {
+                    status: 404,
+                    headers: {"Content-Type": "text/plain"},
+                    body: "Not Found"
+                };
+            }
+            
+            // Add timing header
+            let duration = time.now() - context.startTime;
+            context.response.headers["X-Response-Time"] = duration as string + "ms";
+            
+            return context.response!;
+        }
+        
+        private func handleError(context: Context, error: Error) -> Response {
+            for handler in this.errorHandlers {
+                try {
+                    let response = handler(context, error);
+                    if response != nil {
+                        return response;
+                    }
+                } catch {
+                    // Continue to next error handler
+                }
+            }
+            
+            // Default error handler
+            return Response {
+                status: 500,
+                headers: {"Content-Type": "text/plain"},
+                body: "Internal Server Error: " + error.message
+            };
+        }
+    }
+    
+    // Built-in middleware
+    
+    // Logger middleware
+    pub func logger(format: string = "combined") -> Middleware {
+        return (context: Context) -> Response? {
+            let start = time.now();
+            
+            // Process request
+            context.next();
+            
+            let duration = time.now() - start;
+            
+            // Log based on format
+            let logMessage = match format {
+                case "combined" => 
+                    `${context.request.ip} - ${context.request.method} ${context.request.url.path} ` +
+                    `${context.response.status} ${duration}ms`,
+                case "common" =>
+                    `${context.request.ip} - ${context.request.method} ${context.request.url.path}`,
+                case "dev" =>
+                    `${context.request.method} ${context.request.url.path} ${duration}ms`,
+                case "short" =>
+                    `${context.request.method} ${context.request.url.path}`,
+                case _ => format
+            };
+            
+            print(logMessage);
+            return nil;
+        };
+    }
+    
+    // JSON body parser
+    pub func jsonParser() -> Middleware {
+        return (context: Context) -> Response? {
+            let contentType = context.getHeader("Content-Type");
+            
+            if contentType != nil && contentType!.contains("application/json") {
+                try {
+                    if context.request.body.length > 0 {
+                        let parsed = json.parse(context.request.body);
+                        context.state["body"] = parsed;
+                    }
+                } catch error {
+                    return Response {
+                        status: 400,
+                        headers: {"Content-Type": "application/json"},
+                        body: json.stringify({error: "Invalid JSON"})
+                    };
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // URL-encoded body parser
+    pub func urlencodedParser() -> Middleware {
+        return (context: Context) -> Response? {
+            let contentType = context.getHeader("Content-Type");
+            
+            if contentType != nil && 
+               contentType!.contains("application/x-www-form-urlencoded") {
+                try {
+                    let parsed = parseFormData(context.request.body);
+                    context.state["body"] = parsed;
+                } catch error {
+                    return Response {
+                        status: 400,
+                        headers: {"Content-Type": "application/json"},
+                        body: json.stringify({error: "Invalid form data"})
+                    };
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Multipart form parser
+    pub func multipartParser() -> Middleware {
+        return (context: Context) -> Response? {
+            let contentType = context.getHeader("Content-Type");
+            
+            if contentType != nil && 
+               contentType!.contains("multipart/form-data") {
+                try {
+                    let boundary = extractBoundary(contentType!);
+                    let parts = parseMultipart(context.request.body, boundary);
+                    
+                    var formData = {} as map[string, any>;
+                    var files = {} as map[string, any>;
+                    
+                    for part in parts {
+                        if part.filename != nil {
+                            files[part.name] = part;
+                        } else {
+                            formData[part.name] = part.data;
+                        }
+                    }
+                    
+                    context.state["body"] = formData;
+                    context.state["files"] = files;
+                    
+                } catch error {
+                    return Response {
+                        status: 400,
+                        headers: {"Content-Type": "application/json"},
+                        body: json.stringify({error: "Invalid multipart data"})
+                    };
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Static file server
+    pub func staticFiles(root: string, options: map[string, any> = {}) -> Middleware {
+        let indexFile = if options.contains("index") then options["index"] as string else "index.html";
+        let maxAge = if options.contains("maxAge") then options["maxAge"] as int else 0;
+        
+        return (context: Context) -> Response? {
+            let path = context.request.url.path;
+            
+            // Security: prevent directory traversal
+            if path.contains("..") || path.contains("//") {
+                return null;
+            }
+            
+            let filePath = if path == "/" then 
+                root + "/" + indexFile else 
+                root + path;
+            
+            try {
+                if fs.exists(filePath) && fs.isFile(filePath) {
+                    let content = fs.readFile(filePath);
+                    let mimeType = getMimeType(filePath);
+                    
+                    let headers = {"Content-Type": mimeType};
+                    if maxAge > 0 {
+                        headers["Cache-Control"] = `public, max-age=${maxAge}`;
+                    }
+                    
+                    return Response {
+                        status: 200,
+                        headers: headers,
+                        body: content
+                    };
+                }
+            } catch error {
+                // File not found or error reading
+            }
+            
+            return null;
+        };
+    }
+    
+    // Compression middleware
+    pub func compression() -> Middleware {
+        return (context: Context) -> Response? {
+            let acceptEncoding = context.getHeader("Accept-Encoding");
+            
+            if acceptEncoding != nil {
+                context.next();
+                
+                if context.response != nil && 
+                   context.response!.body.length > 1024 && // Only compress large responses
+                   context.response!.headers["Content-Type"] != nil &&
+                   isCompressible(context.response!.headers["Content-Type"]!) {
+                    
+                    let encodings = acceptEncoding!.split(",").map(e => e.trim());
+                    
+                    if encodings.contains("gzip") {
+                        let compressed = gzip.compress(context.response!.body);
+                        context.response!.body = compressed;
+                        context.response!.headers["Content-Encoding"] = "gzip";
+                        context.response!.headers["Vary"] = "Accept-Encoding";
+                    } else if encodings.contains("deflate") {
+                        let compressed = deflate.compress(context.response!.body);
+                        context.response!.body = compressed;
+                        context.response!.headers["Content-Encoding"] = "deflate";
+                        context.response!.headers["Vary"] = "Accept-Encoding";
+                    }
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // CORS middleware
+    pub func cors(options: map[string, any> = {}) -> Middleware {
+        let origin = if options.contains("origin") then options["origin"] as string else "*";
+        let methods = if options.contains("methods") then options["methods"] as [string] else ["GET", "POST", "PUT", "DELETE", "OPTIONS"];
+        let allowedHeaders = if options.contains("allowedHeaders") then options["allowedHeaders"] as [string] else ["Content-Type", "Authorization"];
+        let exposedHeaders = if options.contains("exposedHeaders") then options["exposedHeaders"] as [string] else [];
+        let credentials = if options.contains("credentials") then options["credentials"] as bool else false;
+        let maxAge = if options.contains("maxAge") then options["maxAge"] as int else 86400;
+        
+        return (context: Context) -> Response? {
+            // Handle preflight requests
+            if context.request.method == "OPTIONS" {
+                return Response {
+                    status: 204,
+                    headers: {
+                        "Access-Control-Allow-Origin": origin,
+                        "Access-Control-Allow-Methods": methods.join(", "),
+                        "Access-Control-Allow-Headers": allowedHeaders.join(", "),
+                        "Access-Control-Max-Age": maxAge as string
+                    },
+                    body: ""
+                };
+            }
+            
+            context.next();
+            
+            // Add CORS headers to response
+            if context.response != nil {
+                context.response!.headers["Access-Control-Allow-Origin"] = origin;
+                
+                if exposedHeaders.length > 0 {
+                    context.response!.headers["Access-Control-Expose-Headers"] = exposedHeaders.join(", ");
+                }
+                
+                if credentials {
+                    context.response!.headers["Access-Control-Allow-Credentials"] = "true";
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Rate limiting middleware
+    pub func rateLimit(options: map[string, any>) -> Middleware {
+        let windowMs = if options.contains("windowMs") then options["windowMs"] as int else 15 * 60 * 1000; // 15 minutes
+        let max = if options.contains("max") then options["max"] as int else 100;
+        let keyGenerator = if options.contains("keyGenerator") then 
+            options["keyGenerator"] as (Context) -> string else
+            (ctx: Context) -> ctx.request.ip;
+        let skip = if options.contains("skip") then 
+            options["skip"] as (Context) -> bool else
+            (ctx: Context) -> false;
+        
+        var store = RateLimitStore{};
+        
+        return (context: Context) -> Response? {
+            if skip(context) {
+                return nil;
+            }
+            
+            let key = keyGenerator(context);
+            let current = store.get(key);
+            let resetTime = time.now() + windowMs;
+            
+            if current >= max {
+                return Response {
+                    status: 429,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Retry-After": (windowMs / 1000) as string,
+                        "X-RateLimit-Limit": max as string,
+                        "X-RateLimit-Remaining": "0",
+                        "X-RateLimit-Reset": resetTime as string
+                    },
+                    body: json.stringify({
+                        error: "Too many requests",
+                        message: `Rate limit exceeded. Try again in ${windowMs / 1000} seconds.`
+                    })
+                };
+            }
+            
+            store.increment(key, windowMs);
+            
+            context.response!.headers["X-RateLimit-Limit"] = max as string;
+            context.response!.headers["X-RateLimit-Remaining"] = (max - current - 1) as string;
+            context.response!.headers["X-RateLimit-Reset"] = resetTime as string;
+            
+            return nil;
+        };
+    }
+    
+    // Authentication middleware
+    pub func authenticate(strategy: string, options: map[string, any> = {}) -> Middleware {
+        return (context: Context) -> Response? {
+            match strategy {
+                case "jwt" => {
+                    let authHeader = context.getHeader("Authorization");
+                    if authHeader == nil || !authHeader!.startsWith("Bearer ") {
+                        return Response {
+                            status: 401,
+                            headers: {"WWW-Authenticate": "Bearer"},
+                            body: json.stringify({error: "Authentication required"})
+                        };
+                    }
+                    
+                    let token = authHeader!.substring(7);
+                    
+                    try {
+                        let payload = jwt.verify(token, options["secret"] as string);
+                        context.user = payload;
+                    } catch error {
+                        return Response {
+                            status: 401,
+                            headers: {"WWW-Authenticate": "Bearer"},
+                            body: json.stringify({error: "Invalid token"})
+                        };
+                    }
+                },
+                case "basic" => {
+                    let authHeader = context.getHeader("Authorization");
+                    if authHeader == nil || !authHeader!.startsWith("Basic ") {
+                        return Response {
+                            status: 401,
+                            headers: {"WWW-Authenticate": "Basic realm=\"Restricted Area\""},
+                            body: json.stringify({error: "Authentication required"})
+                        };
+                    }
+                    
+                    let credentials = base64.decode(authHeader!.substring(6));
+                    let parts = credentials.split(":");
+                    
+                    if parts.length != 2 {
+                        return Response {
+                            status: 401,
+                            headers: {"WWW-Authenticate": "Basic"},
+                            body: json.stringify({error: "Invalid credentials"})
+                        };
+                    }
+                    
+                    let username = parts[0];
+                    let password = parts[1];
+                    
+                    // Validate against options or database
+                    if options.contains("validate") {
+                        let isValid = options["validate"](username, password);
+                        if !isValid {
+                            return Response {
+                                status: 401,
+                                headers: {"WWW-Authenticate": "Basic"},
+                                body: json.stringify({error: "Invalid credentials"})
+                            };
+                        }
+                    }
+                    
+                    context.user = {username: username};
+                },
+                case "session" => {
+                    let sessionId = context.cookies["sessionId"];
+                    if sessionId == nil {
+                        return Response {
+                            status: 401,
+                            body: json.stringify({error: "Session required"})
+                        };
+                    }
+                    
+                    try {
+                        let session = sessionStore.get(sessionId!);
+                        if session == nil {
+                            return Response {
+                                status: 401,
+                                body: json.stringify({error: "Invalid session"})
+                            };
+                        }
+                        
+                        context.user = session!.user;
+                        context.state["session"] = session;
+                    } catch error {
+                        return Response {
+                            status: 500,
+                            body: json.stringify({error: "Session error"})
+                        };
+                    }
+                },
+                case _ => {
+                    return Response {
+                        status: 500,
+                        body: json.stringify({error: "Unknown authentication strategy"})
+                    };
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Authorization middleware
+    pub func authorize(role: string) -> Middleware {
+        return (context: Context) -> Response? {
+            if context.user == nil {
+                return Response {
+                    status: 401,
+                    body: json.stringify({error: "Authentication required"})
+                };
+            }
+            
+            let userRole = context.user!.role;
+            if userRole != role {
+                return Response {
+                    status: 403,
+                    body: json.stringify({error: "Insufficient permissions"})
+                };
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Request validation middleware
+    pub func validate(schema: map[string, any>) -> Middleware {
+        return (context: Context) -> Response? {
+            let data = context.state["body"];
+            let errors = validateData(data, schema);
+            
+            if errors.length > 0 {
+                return Response {
+                    status: 400,
+                    headers: {"Content-Type": "application/json"},
+                    body: json.stringify({errors: errors})
+                };
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Error handling middleware
+    pub func errorHandler() -> ErrorHandler {
+        return (context: Context, error: Error) -> Response {
+            print(`Error: ${error.message} at ${error.stackTrace}`);
+            
+            // Production vs development error responses
+            let isProduction = process.env.NODE_ENV == "production";
+            
+            if !isProduction {
+                return Response {
+                    status: 500,
+                    headers: {"Content-Type": "application/json"},
+                    body: json.stringify({
+                        error: error.message,
+                        stack: error.stackTrace,
+                        timestamp: time.now()
+                    })
+                };
+            } else {
+                return Response {
+                    status: 500,
+                    headers: {"Content-Type": "application/json"},
+                    body: json.stringify({
+                        error: "Internal Server Error",
+                        timestamp: time.now()
+                    })
+                };
+            }
+        };
+    }
+    
+    // CSRF protection
+    pub func csrf(options: map[string, any> = {}) -> Middleware {
+        let cookie = if options.contains("cookie") then options["cookie"] as bool else true;
+        let ignoreMethods = if options.contains("ignoreMethods") then options["ignoreMethods"] as [string] else ["GET", "HEAD", "OPTIONS"];
+        
+        return (context: Context) -> Response? {
+            // Skip for ignored methods
+            if ignoreMethods.contains(context.request.method) {
+                return nil;
+            }
+            
+            let token: string;
+            
+            if cookie {
+                // Get token from cookie
+                token = context.cookies["XSRF-TOKEN"];
+                
+                // Verify against header
+                let headerToken = context.getHeader("X-XSRF-TOKEN");
+                if headerToken == nil || headerToken != token {
+                    return Response {
+                        status: 403,
+                        body: json.stringify({error: "Invalid CSRF token"})
+                    };
+                }
+            } else {
+                // Get token from body or query
+                token = context.getQueryParam("_csrf") ?? 
+                       (context.state["body"] != nil ? context.state["body"]["_csrf"] as string? : nil);
+                
+                if token == nil {
+                    return Response {
+                        status: 403,
+                        body: json.stringify({error: "CSRF token required"})
+                    };
+                }
+                
+                // Verify token (implementation depends on your token storage)
+                if !isValidCsrfToken(token!) {
+                    return Response {
+                        status: 403,
+                        body: json.stringify({error: "Invalid CSRF token"})
+                    };
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Security headers
+    pub func securityHeaders(options: map[string, any> = {}) -> Middleware {
+        return (context: Context) -> Response? {
+            context.next();
+            
+            if context.response != nil {
+                let headers = context.response!.headers;
+                
+                // Content Security Policy
+                if options.contains("csp") {
+                    headers["Content-Security-Policy"] = options["csp"] as string;
+                }
+                
+                // X-Content-Type-Options
+                headers["X-Content-Type-Options"] = "nosniff";
+                
+                // X-Frame-Options
+                headers["X-Frame-Options"] = "SAMEORIGIN";
+                
+                // X-XSS-Protection
+                headers["X-XSS-Protection"] = "1; mode=block";
+                
+                // Strict-Transport-Security (HTTPS only)
+                if context.request.secure {
+                    headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
+                }
+                
+                // Referrer-Policy
+                if options.contains("referrerPolicy") {
+                    headers["Referrer-Policy"] = options["referrerPolicy"] as string;
+                }
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Request timing
+    pub func requestTiming() -> Middleware {
+        return (context: Context) -> Response? {
+            context.startTime = time.now();
+            context.next();
+            return nil;
+        };
+    }
+    
+    // Cache control
+    pub func cacheControl(directives: string) -> Middleware {
+        return (context: Context) -> Response? {
+            context.next();
+            
+            if context.response != nil {
+                context.response!.headers["Cache-Control"] = directives;
+            }
+            
+            return nil;
+        };
+    }
+    
+    // Helper functions
+    
+    private func parseQuery(query: string) -> map[string, string] {
+        var result = {} as map[string, string];
+        
+        if query.length == 0 {
+            return result;
+        }
+        
+        let pairs = query.split("&");
+        for pair in pairs {
+            let parts = pair.split("=");
+            if parts.length == 2 {
+                result[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
+            }
+        }
+        
+        return result;
+    }
+    
+    private func parseCookies(cookieHeader: string?) -> map[string, string] {
+        var cookies = {} as map[string, string];
+        
+        if cookieHeader == nil {
+            return cookies;
+        }
+        
+        let pairs = cookieHeader!.split(";");
+        for pair in pairs {
+            let trimmed = pair.trim();
+            let parts = trimmed.split("=", 2);
+            if parts.length == 2 {
+                cookies[parts[0].trim()] = parts[1].trim();
+            }
+        }
+        
+        return cookies;
+    }
+    
+    private func buildCookie(name: string, value: string, options: CookieOptions) -> string {
+        var parts = [`${name}=${encodeURIComponent(value)}`];
+        
+        if options.maxAge != nil {
+            parts.push(`Max-Age=${options.maxAge}`);
+        }
+        
+        if options.expires != nil {
+            parts.push(`Expires=${options.expires}`);
+        }
+        
+        if options.path != nil {
+            parts.push(`Path=${options.path}`);
+        }
+        
+        if options.domain != nil {
+            parts.push(`Domain=${options.domain}`);
+        }
+        
+        if options.secure != nil && options.secure! {
+            parts.push("Secure");
+        }
+        
+        if options.httpOnly != nil && options.httpOnly! {
+            parts.push("HttpOnly");
+        }
+        
+        if options.sameSite != nil {
+            parts.push(`SameSite=${options.sameSite}`);
+        }
+        
+        return parts.join("; ");
+    }
+    
+    private func getMimeType(filename: string) -> string {
+        let ext = filename.substring(filename.lastIndexOf(".") + 1).toLower();
+        
+        let mimeTypes = {
+            "html": "text/html",
+            "htm": "text/html",
+            "css": "text/css",
+            "js": "application/javascript",
+            "json": "application/json",
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "gif": "image/gif",
+            "svg": "image/svg+xml",
+            "ico": "image/x-icon",
+            "txt": "text/plain",
+            "pdf": "application/pdf",
+            "zip": "application/zip",
+            "mp3": "audio/mpeg",
+            "mp4": "video/mp4"
+        } as map[string, string];
+        
+        return if mimeTypes.contains(ext) then mimeTypes[ext] else "application/octet-stream";
+    }
+    
+    private func isCompressible(mimeType: string) -> bool {
+        let compressibleTypes = [
+            "text/", "application/json", "application/javascript",
+            "application/xml", "application/xhtml+xml"
+        ];
+        
+        for type in compressibleTypes {
+            if mimeType.startsWith(type) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    // Example usage
+    pub func createApp() -> MiddlewareChain {
+        let app = MiddlewareChain();
+        
+        // Add middleware in order
+        app.use(requestTiming());
+        app.use(logger("combined"));
+        app.use(securityHeaders());
+        app.use(cors({
+            origin: "http://localhost:3000",
+            credentials: true
+        }));
+        app.use(compression());
+        app.use(jsonParser());
+        app.use(urlencodedParser());
+        app.use(multipartParser());
+        
+        // Error handling
+        app.useError(errorHandler());
+        
+        return app;
+    }
+}

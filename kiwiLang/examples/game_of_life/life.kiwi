@@ -1,0 +1,506 @@
+// Conway's Game of Life in KiwiLang
+// Uses SDL2 for graphics (if available) or terminal output
+
+module life {
+    const WIDTH: int = 80;
+    const HEIGHT: int = 60;
+    const CELL_SIZE: int = 10;
+    const FPS: int = 30;
+    const GENERATIONS: int = 1000;
+    
+    // Game states
+    type Board = [[bool]];
+    
+    // Initialize random board
+    func randomBoard(width: int, height: int, density: float) -> Board {
+        var board = [] as Board;
+        
+        for var y = 0; y < height; y = y + 1 {
+            var row = [] as [bool];
+            for var x = 0; x < width; x = x + 1 {
+                row.push(math.random() < density);
+            }
+            board.push(row);
+        }
+        
+        return board;
+    }
+    
+    // Initialize with patterns
+    func patternBoard(width: int, height: int) -> Board {
+        var board = [] as Board;
+        
+        // Initialize all false
+        for var y = 0; y < height; y = y + 1 {
+            var row = [] as [bool];
+            for var x = 0; x < width; x = x + 1 {
+                row.push(false);
+            }
+            board.push(row);
+        }
+        
+        // Add some patterns
+        // Glider
+        let glider = [(1, 0), (2, 1), (0, 2), (1, 2), (2, 2)];
+        for (dx, dy) in glider {
+            let x = 5 + dx;
+            let y = 5 + dy;
+            if x < width && y < height {
+                board[y][x] = true;
+            }
+        }
+        
+        // Blinker
+        let blinker = [(0, 0), (1, 0), (2, 0)];
+        for (dx, dy) in blinker {
+            let x = 15 + dx;
+            let y = 10 + dy;
+            if x < width && y < height {
+                board[y][x] = true;
+            }
+        }
+        
+        // Beacon
+        let beacon = [
+            (0, 0), (1, 0),
+            (0, 1), (1, 1),
+            (2, 2), (3, 2),
+            (2, 3), (3, 3)
+        ];
+        for (dx, dy) in beacon {
+            let x = 25 + dx;
+            let y = 5 + dy;
+            if x < width && y < height {
+                board[y][x] = true;
+            }
+        }
+        
+        // Glider gun (simplified)
+        let gun = [
+            (0, 4), (0, 5), (1, 4), (1, 5),
+            (10, 4), (10, 5), (10, 6),
+            (11, 3), (11, 7),
+            (12, 2), (12, 8),
+            (13, 2), (13, 8),
+            (14, 5),
+            (15, 3), (15, 7),
+            (16, 4), (16, 5), (16, 6),
+            (17, 5)
+        ];
+        for (dx, dy) in gun {
+            let x = 40 + dx;
+            let y = 20 + dy;
+            if x < width && y < height {
+                board[y][x] = true;
+            }
+        }
+        
+        return board;
+    }
+    
+    // Count live neighbors with toroidal (wrap-around) boundaries
+    func countNeighbors(board: Board, x: int, y: int) -> int {
+        let width = board[0].length;
+        let height = board.length;
+        var count = 0;
+        
+        for var dy = -1; dy <= 1; dy = dy + 1 {
+            for var dx = -1; dx <= 1; dx = dx + 1 {
+                if dx == 0 && dy == 0 {
+                    continue;
+                }
+                
+                let nx = (x + dx + width) % width;
+                let ny = (y + dy + height) % height;
+                
+                if board[ny][nx] {
+                    count = count + 1;
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    // Compute next generation
+    func nextGeneration(board: Board) -> Board {
+        let width = board[0].length;
+        let height = board.length;
+        var newBoard = [] as Board;
+        
+        for var y = 0; y < height; y = y + 1 {
+            var newRow = [] as [bool];
+            for var x = 0; x < width; x = x + 1 {
+                let neighbors = countNeighbors(board, x, y);
+                let alive = board[y][x];
+                
+                // Conway's rules:
+                // 1. Any live cell with fewer than 2 live neighbors dies (underpopulation)
+                // 2. Any live cell with 2 or 3 live neighbors lives on
+                // 3. Any live cell with more than 3 live neighbors dies (overpopulation)
+                // 4. Any dead cell with exactly 3 live neighbors becomes alive (reproduction)
+                
+                let newAlive = if alive {
+                    neighbors == 2 || neighbors == 3
+                } else {
+                    neighbors == 3
+                };
+                
+                newRow.push(newAlive);
+            }
+            newBoard.push(newRow);
+        }
+        
+        return newBoard;
+    }
+    
+    // Print board to terminal
+    func printBoard(board: Board, generation: int) -> void {
+        // Clear screen (ANSI escape code)
+        print("\x1b[2J\x1b[H");
+        
+        print("Generation: " + generation as string);
+        print("Controls: [Space] Pause/Resume  [R] Reset  [Q] Quit");
+        print("");
+        
+        let width = board[0].length;
+        let height = math.min(board.length, 30); // Limit height for terminal
+        
+        // Top border
+        print("+" + ("-" * width) + "+");
+        
+        for var y = 0; y < height; y = y + 1 {
+            var line = "|";
+            for var x = 0; x < width; x = x + 1 {
+                line = line + if board[y][x] then "■" else " ";
+            }
+            line = line + "|";
+            print(line);
+        }
+        
+        // Bottom border
+        print("+" + ("-" * width) + "+");
+        
+        // Statistics
+        let liveCells = countLiveCells(board);
+        let density = (liveCells as float / (width * height) as float * 100.0) as int;
+        print("Live cells: " + liveCells as string + " (" + density as string + "%)");
+    }
+    
+    // Count total live cells
+    func countLiveCells(board: Board) -> int {
+        var count = 0;
+        
+        for row in board {
+            for cell in row {
+                if cell {
+                    count = count + 1;
+                }
+            }
+        }
+        
+        return count;
+    }
+    
+    // Terminal-based game
+    func runTerminal() -> void {
+        print("Conway's Game of Life");
+        print("====================");
+        print("");
+        
+        var board = patternBoard(WIDTH, HEIGHT);
+        var generation = 0;
+        var paused = false;
+        var running = true;
+        
+        while running && generation < GENERATIONS {
+            printBoard(board, generation);
+            
+            // Check for input (non-blocking if possible)
+            // Note: Terminal input handling is platform-dependent
+            // For simplicity, we'll just wait for keypress
+            
+            print("Press Enter to continue, Space to pause, Q to quit...");
+            let input = io.readln();
+            
+            match input {
+                case " " => {
+                    paused = !paused;
+                    print(if paused then "Paused" else "Resumed");
+                },
+                case "r", "R" => {
+                    board = patternBoard(WIDTH, HEIGHT);
+                    generation = 0;
+                    print("Board reset");
+                },
+                case "q", "Q" => {
+                    running = false;
+                    print("Quitting...");
+                },
+                case _ => {
+                    // Continue
+                }
+            }
+            
+            if !paused {
+                board = nextGeneration(board);
+                generation = generation + 1;
+                
+                // Check for stable state
+                let liveCells = countLiveCells(board);
+                if liveCells == 0 {
+                    print("All cells died!");
+                    running = false;
+                }
+            }
+            
+            // Small delay
+            time.sleep(100); // 100ms
+        }
+        
+        print("\nSimulation ended after " + generation as string + " generations");
+    }
+    
+    // SDL2-based graphical version
+    #ifdef USE_SDL
+    import sdl2;
+    
+    func runSDL() -> void {
+        print("Initializing SDL...");
+        
+        if sdl2.init(sdl2.INIT_VIDEO) != 0 {
+            print("Failed to initialize SDL: " + sdl2.getError());
+            return;
+        }
+        
+        let window_width = WIDTH * CELL_SIZE;
+        let window_height = HEIGHT * CELL_SIZE;
+        
+        let window = sdl2.createWindow(
+            "Game of Life - KiwiLang",
+            sdl2.WINDOWPOS_CENTERED,
+            sdl2.WINDOWPOS_CENTERED,
+            window_width,
+            window_height,
+            sdl2.WINDOW_SHOWN
+        );
+        
+        if window == nil {
+            print("Failed to create window: " + sdl2.getError());
+            sdl2.quit();
+            return;
+        }
+        
+        let renderer = sdl2.createRenderer(window, -1, sdl2.RENDERER_ACCELERATED);
+        if renderer == nil {
+            print("Failed to create renderer: " + sdl2.getError());
+            sdl2.destroyWindow(window);
+            sdl2.quit();
+            return;
+        }
+        
+        var board = patternBoard(WIDTH, HEIGHT);
+        var generation = 0;
+        var paused = false;
+        var running = true;
+        var lastTime = time.now();
+        var frameCount = 0;
+        
+        print("SDL initialized. Starting simulation...");
+        
+        while running {
+            // Handle events
+            var event = sdl2.Event{};
+            while sdl2.pollEvent(&event) != 0 {
+                match event.type {
+                    case sdl2.QUIT => {
+                        running = false;
+                    },
+                    case sdl2.KEYDOWN => {
+                        match event.key.keysym.sym {
+                            case sdl2.K_SPACE => {
+                                paused = !paused;
+                                print(if paused then "Paused" else "Resumed");
+                            },
+                            case sdl2.K_r => {
+                                board = patternBoard(WIDTH, HEIGHT);
+                                generation = 0;
+                                print("Board reset");
+                            },
+                            case sdl2.K_q => {
+                                running = false;
+                            },
+                            case _ => {}
+                        }
+                    },
+                    case _ => {}
+                }
+            }
+            
+            // Clear screen
+            sdl2.setRenderDrawColor(renderer, 0, 0, 0, 255);
+            sdl2.renderClear(renderer);
+            
+            // Draw grid
+            sdl2.setRenderDrawColor(renderer, 40, 40, 40, 255);
+            for var x = 0; x <= WIDTH; x = x + 1 {
+                let px = x * CELL_SIZE;
+                sdl2.renderDrawLine(renderer, px, 0, px, window_height);
+            }
+            for var y = 0; y <= HEIGHT; y = y + 1 {
+                let py = y * CELL_SIZE;
+                sdl2.renderDrawLine(renderer, 0, py, window_width, py);
+            }
+            
+            // Draw cells
+            sdl2.setRenderDrawColor(renderer, 0, 255, 0, 255);
+            for var y = 0; y < HEIGHT; y = y + 1 {
+                for var x = 0; x < WIDTH; x = x + 1 {
+                    if board[y][x] {
+                        let rect = sdl2.Rect{
+                            x: x * CELL_SIZE + 1,
+                            y: y * CELL_SIZE + 1,
+                            w: CELL_SIZE - 2,
+                            h: CELL_SIZE - 2
+                        };
+                        sdl2.renderFillRect(renderer, &rect);
+                    }
+                }
+            }
+            
+            // Draw text overlay
+            // Note: SDL2 text rendering requires additional libraries
+            // For simplicity, we'll just print to console
+            
+            // Update display
+            sdl2.renderPresent(renderer);
+            
+            // Update simulation if not paused
+            if !paused {
+                board = nextGeneration(board);
+                generation = generation + 1;
+                
+                // Check for extinction
+                if countLiveCells(board) == 0 {
+                    print("All cells died after " + generation as string + " generations!");
+                    paused = true;
+                }
+                
+                // Limit frame rate
+                frameCount = frameCount + 1;
+                let currentTime = time.now();
+                if currentTime - lastTime >= 1000 {
+                    let fps = frameCount;
+                    print("Gen: " + generation as string + 
+                          " | FPS: " + fps as string + 
+                          " | Cells: " + countLiveCells(board) as string);
+                    frameCount = 0;
+                    lastTime = currentTime;
+                }
+                
+                // Cap at target FPS
+                time.sleep(1000 / FPS);
+            } else {
+                // Still process events when paused
+                time.sleep(50);
+            }
+        }
+        
+        // Cleanup
+        sdl2.destroyRenderer(renderer);
+        sdl2.destroyWindow(window);
+        sdl2.quit();
+        
+        print("SDL simulation ended after " + generation as string + " generations");
+    }
+    #endif
+    
+    // Benchmark mode
+    func runBenchmark(iterations: int) -> void {
+        print("Game of Life Benchmark");
+        print("======================");
+        print("");
+        
+        var board = randomBoard(WIDTH, HEIGHT, 0.3);
+        var totalTime = 0.0;
+        
+        print("Running " + iterations as string + " generations...");
+        let startTime = time.now();
+        
+        for var i = 0; i < iterations; i = i + 1 {
+            board = nextGeneration(board);
+            
+            // Print progress
+            if i % 100 == 0 {
+                let progress = (i as float / iterations as float * 100.0) as int;
+                print("Progress: " + progress as string + "%");
+            }
+        }
+        
+        let endTime = time.now();
+        totalTime = (endTime - startTime) / 1000.0; // seconds
+        
+        let liveCells = countLiveCells(board);
+        let cellsPerSecond = (WIDTH * HEIGHT * iterations) as float / totalTime;
+        
+        print("\nBenchmark Results:");
+        print("Time: " + totalTime as string + " seconds");
+        print("Generations: " + iterations as string);
+        print("Board size: " + WIDTH as string + "x" + HEIGHT as string);
+        print("Final live cells: " + liveCells as string);
+        print("Performance: " + cellsPerSecond as string + " cells/second");
+        print("           : " + (cellsPerSecond / 1e6) as string + " Mcells/second");
+        
+        // Verify results (pattern should be stable or oscillating)
+        if liveCells > 0 {
+            print("✓ Simulation completed successfully");
+        } else {
+            print("✗ All cells died");
+        }
+    }
+    
+    // Main entry point
+    pub func main(mode: string) -> void {
+        print("Conway's Game of Life - KiwiLang Implementation");
+        print("==============================================");
+        print("");
+        
+        match mode {
+            case "terminal" => {
+                print("Running in terminal mode");
+                runTerminal();
+            },
+            case "benchmark" => {
+                print("Running in benchmark mode");
+                runBenchmark(1000);
+            },
+            #ifdef USE_SDL
+            case "sdl" => {
+                print("Running with SDL graphics");
+                runSDL();
+            },
+            #endif
+            case "help" => {
+                print("Usage: life [mode]");
+                print("Modes:");
+                print("  terminal   - Terminal-based simulation");
+                #ifdef USE_SDL
+                print("  sdl        - SDL2 graphical simulation");
+                #endif
+                print("  benchmark  - Performance benchmark");
+                print("  help       - Show this help");
+            },
+            case _ => {
+                print("Unknown mode: " + mode);
+                print("Use 'help' for available modes");
+            }
+        }
+    }
+}
+
+// Command line interface
+func main(args: [string]) -> int {
+    let mode = if args.length > 1 then args[1] else "terminal";
+    life.main(mode);
+    return 0;
+}

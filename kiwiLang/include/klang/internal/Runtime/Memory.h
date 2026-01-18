@@ -1,4 +1,4 @@
-include/klang/internal/Runtime/Memory.h
+include/kiwiLang/internal/Runtime/Memory.h
 #pragma once
 #include "Object.h"
 #include <cstddef>
@@ -8,7 +8,7 @@ include/klang/internal/Runtime/Memory.h
 #include <functional>
 #include <type_traits>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace runtime {
 
@@ -177,4 +177,4 @@ private:
 
 } // namespace runtime
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

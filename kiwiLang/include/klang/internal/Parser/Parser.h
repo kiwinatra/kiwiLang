@@ -1,16 +1,16 @@
-include/klang/internal/Parser/Parser.h
+include/kiwiLang/internal/Parser/Parser.h
 #pragma once
-#include "klang/internal/Lexer/Token.h"
-#include "klang/internal/AST/Expr.h"
-#include "klang/internal/AST/Stmt.h"
-#include "klang/internal/Diagnostics/Diagnostic.h"
-#include "klang/internal/Utils/SourceLocation.h"
+#include "kiwiLang/internal/Lexer/Token.h"
+#include "kiwiLang/internal/AST/Expr.h"
+#include "kiwiLang/internal/AST/Stmt.h"
+#include "kiwiLang/internal/Diagnostics/Diagnostic.h"
+#include "kiwiLang/internal/Utils/SourceLocation.h"
 #include <vector>
 #include <memory>
 #include <unordered_map>
 #include <optional>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 
 class Parser {
@@ -150,4 +150,4 @@ private:
 };
 
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

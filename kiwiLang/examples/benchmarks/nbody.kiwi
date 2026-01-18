@@ -1,0 +1,207 @@
+// N-body simulation benchmark
+// Based on the classic n-body problem
+
+module nbody {
+    const G: float = 6.67430e-11; // Gravitational constant
+    const SOLAR_MASS: float = 1.98892e30;
+    const DAYS_PER_YEAR: float = 365.24;
+    
+    struct Body {
+        x: float,
+        y: float,
+        z: float,
+        vx: float,
+        vy: float,
+        vz: float,
+        mass: float
+    }
+    
+    func offsetMomentum(bodies: [Body]) -> void {
+        var px = 0.0;
+        var py = 0.0;
+        var pz = 0.0;
+        
+        for body in bodies {
+            px += body.vx * body.mass;
+            py += body.vy * body.mass;
+            pz += body.vz * body.mass;
+        }
+        
+        let sun = &bodies[0];
+        sun.vx = -px / SOLAR_MASS;
+        sun.vy = -py / SOLAR_MASS;
+        sun.vz = -pz / SOLAR_MASS;
+    }
+    
+    func energy(bodies: [Body]) -> float {
+        var e = 0.0;
+        let n = bodies.length;
+        
+        for var i = 0; i < n; i = i + 1 {
+            let bi = bodies[i];
+            e += 0.5 * bi.mass * 
+                 (bi.vx * bi.vx + bi.vy * bi.vy + bi.vz * bi.vz);
+            
+            for var j = i + 1; j < n; j = j + 1 {
+                let bj = bodies[j];
+                let dx = bi.x - bj.x;
+                let dy = bi.y - bj.y;
+                let dz = bi.z - bj.z;
+                let distance = math.sqrt(dx*dx + dy*dy + dz*dz);
+                e -= (G * bi.mass * bj.mass) / distance;
+            }
+        }
+        
+        return e;
+    }
+    
+    func advance(bodies: [Body], dt: float) -> void {
+        let n = bodies.length;
+        
+        // Compute acceleration
+        for var i = 0; i < n; i = i + 1 {
+            let bi = &bodies[i];
+            
+            for var j = i + 1; j < n; j = j + 1 {
+                let bj = &bodies[j];
+                
+                let dx = bi.x - bj.x;
+                let dy = bi.y - bj.y;
+                let dz = bi.z - bj.z;
+                
+                let distanceSq = dx*dx + dy*dy + dz*dz;
+                let distance = math.sqrt(distanceSq);
+                let mag = dt / (distance * distanceSq);
+                
+                let mj_mag = bj.mass * mag;
+                bi.vx -= dx * mj_mag;
+                bi.vy -= dy * mj_mag;
+                bi.vz -= dz * mj_mag;
+                
+                let mi_mag = bi.mass * mag;
+                bj.vx += dx * mi_mag;
+                bj.vy += dy * mi_mag;
+                bj.vz += dz * mi_mag;
+            }
+        }
+        
+        // Update positions
+        for body in &bodies {
+            body.x += dt * body.vx;
+            body.y += dt * body.vy;
+            body.z += dt * body.vz;
+        }
+    }
+    
+    func initSolarSystem() -> [Body] {
+        return [
+            // Sun
+            Body {
+                x: 0.0, y: 0.0, z: 0.0,
+                vx: 0.0, vy: 0.0, vz: 0.0,
+                mass: SOLAR_MASS
+            },
+            
+            // Jupiter
+            Body {
+                x: 4.84143144246472090e+00,
+                y: -1.16032004402742839e+00,
+                z: -1.03622044471123109e-01,
+                vx: 1.66007664274403694e-03 * DAYS_PER_YEAR,
+                vy: 7.69901118419740425e-03 * DAYS_PER_YEAR,
+                vz: -6.90460016972063023e-05 * DAYS_PER_YEAR,
+                mass: 9.54791938424326609e-04 * SOLAR_MASS
+            },
+            
+            // Saturn
+            Body {
+                x: 8.34336671824457987e+00,
+                y: 4.12479856412430479e+00,
+                z: -4.03523417114321381e-01,
+                vx: -2.76742510726862411e-03 * DAYS_PER_YEAR,
+                vy: 4.99852801234917238e-03 * DAYS_PER_YEAR,
+                vz: 2.30417297573763929e-05 * DAYS_PER_YEAR,
+                mass: 2.85885980666130812e-04 * SOLAR_MASS
+            },
+            
+            // Uranus
+            Body {
+                x: 1.28943695621391310e+01,
+                y: -1.51111514016986312e+01,
+                z: -2.23307578892655734e-01,
+                vx: 2.96460137564761618e-03 * DAYS_PER_YEAR,
+                vy: 2.37847173959480950e-03 * DAYS_PER_YEAR,
+                vz: -2.96589568540237556e-05 * DAYS_PER_YEAR,
+                mass: 4.36624404335156298e-05 * SOLAR_MASS
+            },
+            
+            // Neptune
+            Body {
+                x: 1.53796971148509165e+01,
+                y: -2.59193146099879641e+01,
+                z: 1.79258772950371181e-01,
+                vx: 2.68067772490389322e-03 * DAYS_PER_YEAR,
+                vy: 1.62824170038242295e-03 * DAYS_PER_YEAR,
+                vz: -9.51592254519715870e-05 * DAYS_PER_YEAR,
+                mass: 5.15138902046611451e-05 * SOLAR_MASS
+            }
+        ];
+    }
+    
+    func benchmark(iterations: int) -> [float] {
+        let bodies = initSolarSystem();
+        offsetMomentum(bodies);
+        
+        let startEnergy = energy(bodies);
+        
+        let startTime = time.now();
+        
+        for var i = 0; i < iterations; i = i + 1 {
+            advance(bodies, 0.01);
+        }
+        
+        let endTime = time.now();
+        let endEnergy = energy(bodies);
+        
+        let duration = (endTime - startTime) / 1000.0; // seconds
+        
+        return [duration, startEnergy, endEnergy];
+    }
+    
+    pub func runBenchmark() -> void {
+        print("N-body Simulation Benchmark");
+        print("===========================");
+        
+        // Warmup
+        print("Warming up...");
+        benchmark(1000);
+        
+        // Actual benchmark
+        print("Running benchmark...");
+        let iterations = 500000;
+        
+        let result = benchmark(iterations);
+        let duration = result[0];
+        let startEnergy = result[1];
+        let endEnergy = result[2];
+        
+        print("Iterations: " + iterations as string);
+        print("Time: " + duration as string + " seconds");
+        print("Performance: " + (iterations as float / duration) as string + " iterations/second");
+        print("Start energy: " + startEnergy as string);
+        print("End energy: " + endEnergy as string);
+        print("Energy conservation: " + ((endEnergy - startEnergy) / startEnergy * 100.0) as string + "%");
+        
+        if math.abs(endEnergy - startEnergy) / startEnergy < 1e-10 {
+            print("✓ Energy conserved within tolerance");
+        } else {
+            print("✗ Energy not conserved");
+        }
+    }
+}
+
+// Main entry point
+func main() -> int {
+    nbody.runBenchmark();
+    return 0;
+}

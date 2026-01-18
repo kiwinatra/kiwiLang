@@ -1,4 +1,4 @@
-include/klang/internal/CodeGen/LLVMBackend.h
+include/kiwiLang/internal/CodeGen/LLVMBackend.h
 #pragma once
 #include "IR.h"
 #include "Target.h"
@@ -9,7 +9,7 @@ include/klang/internal/CodeGen/LLVMBackend.h
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Support/TargetRegistry.h>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace codegen {
 
@@ -193,4 +193,4 @@ private:
 
 } // namespace codegen
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

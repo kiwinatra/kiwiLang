@@ -1,13 +1,13 @@
-include/klang/internal/Parser/ASTVisitor.h
+include/kiwiLang/internal/Parser/ASTVisitor.h
 #pragma once
-#include "klang/internal/AST/Expr.h"
-#include "klang/internal/AST/Stmt.h"
-#include "klang/internal/AST/Decl.h"
-#include "klang/internal/AST/Type.h"
+#include "kiwiLang/internal/AST/Expr.h"
+#include "kiwiLang/internal/AST/Stmt.h"
+#include "kiwiLang/internal/AST/Decl.h"
+#include "kiwiLang/internal/AST/Type.h"
 #include <type_traits>
 #include <memory>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace ast {
 
@@ -355,4 +355,4 @@ public:
 
 } // namespace ast
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

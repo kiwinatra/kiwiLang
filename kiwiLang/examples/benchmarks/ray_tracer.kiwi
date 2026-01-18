@@ -1,0 +1,554 @@
+// Ray Tracer Benchmark
+// Based on classic ray tracing algorithms
+
+module ray_tracer {
+    const EPSILON: float = 1e-8;
+    const INFINITY: float = 1e10;
+    const MAX_DEPTH: int = 5;
+    const WIDTH: int = 800;
+    const HEIGHT: int = 600;
+    const SAMPLES_PER_PIXEL: int = 4;
+    
+    struct Vec3 {
+        x: float,
+        y: float,
+        z: float
+    }
+    
+    struct Ray {
+        origin: Vec3,
+        direction: Vec3
+    }
+    
+    struct Material {
+        albedo: Vec3,
+        emission: Vec3,
+        roughness: float,
+        metallic: float,
+        ior: float // index of refraction
+    }
+    
+    struct Sphere {
+        center: Vec3,
+        radius: float,
+        material: Material
+    }
+    
+    struct HitRecord {
+        t: float,
+        point: Vec3,
+        normal: Vec3,
+        material: Material
+    }
+    
+    // Vector operations
+    func vec3(x: float, y: float, z: float) -> Vec3 {
+        return Vec3 { x: x, y: y, z: z };
+    }
+    
+    func add(a: Vec3, b: Vec3) -> Vec3 {
+        return vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
+    
+    func sub(a: Vec3, b: Vec3) -> Vec3 {
+        return vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+    
+    func mul(a: Vec3, b: Vec3) -> Vec3 {
+        return vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+    }
+    
+    func scale(a: Vec3, s: float) -> Vec3 {
+        return vec3(a.x * s, a.y * s, a.z * s);
+    }
+    
+    func dot(a: Vec3, b: Vec3) -> float {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+    
+    func cross(a: Vec3, b: Vec3) -> Vec3 {
+        return vec3(
+            a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x
+        );
+    }
+    
+    func length(v: Vec3) -> float {
+        return math.sqrt(dot(v, v));
+    }
+    
+    func normalize(v: Vec3) -> Vec3 {
+        let len = length(v);
+        if len > 0.0 {
+            return scale(v, 1.0 / len);
+        }
+        return v;
+    }
+    
+    func reflect(v: Vec3, n: Vec3) -> Vec3 {
+        return sub(v, scale(n, 2.0 * dot(v, n)));
+    }
+    
+    func refract(v: Vec3, n: Vec3, ni_over_nt: float) -> Vec3? {
+        let uv = normalize(v);
+        let dt = dot(uv, n);
+        let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1.0 - dt * dt);
+        
+        if discriminant > 0.0 {
+            let refracted = sub(
+                scale(sub(uv, scale(n, dt)), ni_over_nt),
+                scale(n, math.sqrt(discriminant))
+            );
+            return refracted;
+        }
+        return nil;
+    }
+    
+    // Random utilities
+    func randomFloat() -> float {
+        return math.random();
+    }
+    
+    func randomInUnitSphere() -> Vec3 {
+        while true {
+            let p = vec3(
+                randomFloat() * 2.0 - 1.0,
+                randomFloat() * 2.0 - 1.0,
+                randomFloat() * 2.0 - 1.0
+            );
+            if length(p) < 1.0 {
+                return p;
+            }
+        }
+    }
+    
+    func randomInUnitDisk() -> Vec3 {
+        while true {
+            let p = vec3(
+                randomFloat() * 2.0 - 1.0,
+                randomFloat() * 2.0 - 1.0,
+                0.0
+            );
+            if length(p) < 1.0 {
+                return p;
+            }
+        }
+    }
+    
+    // Ray-sphere intersection
+    func hitSphere(sphere: Sphere, ray: Ray, t_min: float, t_max: float) -> HitRecord? {
+        let oc = sub(ray.origin, sphere.center);
+        let a = dot(ray.direction, ray.direction);
+        let b = dot(oc, ray.direction);
+        let c = dot(oc, oc) - sphere.radius * sphere.radius;
+        let discriminant = b * b - a * c;
+        
+        if discriminant > 0.0 {
+            let sqrtd = math.sqrt(discriminant);
+            
+            // Check both roots
+            let roots = [(-b - sqrtd) / a, (-b + sqrtd) / a];
+            
+            for t in roots {
+                if t > t_min && t < t_max {
+                    let point = add(ray.origin, scale(ray.direction, t));
+                    let normal = scale(sub(point, sphere.center), 1.0 / sphere.radius);
+                    
+                    return HitRecord {
+                        t: t,
+                        point: point,
+                        normal: normal,
+                        material: sphere.material
+                    };
+                }
+            }
+        }
+        
+        return nil;
+    }
+    
+    // Scene definition
+    func createScene() -> [Sphere] {
+        return [
+            // Ground
+            Sphere {
+                center: vec3(0.0, -1000.0, 0.0),
+                radius: 1000.0,
+                material: Material {
+                    albedo: vec3(0.8, 0.8, 0.8),
+                    emission: vec3(0.0, 0.0, 0.0),
+                    roughness: 0.2,
+                    metallic: 0.0,
+                    ior: 1.5
+                }
+            },
+            
+            // Large sphere in center
+            Sphere {
+                center: vec3(0.0, 1.0, 0.0),
+                radius: 1.0,
+                material: Material {
+                    albedo: vec3(0.8, 0.3, 0.3),
+                    emission: vec3(0.0, 0.0, 0.0),
+                    roughness: 0.1,
+                    metallic: 0.8,
+                    ior: 1.5
+                }
+            },
+            
+            // Glass sphere
+            Sphere {
+                center: vec3(-2.5, 0.5, 0.5),
+                radius: 0.5,
+                material: Material {
+                    albedo: vec3(0.9, 0.9, 0.9),
+                    emission: vec3(0.0, 0.0, 0.0),
+                    roughness: 0.0,
+                    metallic: 0.0,
+                    ior: 1.5
+                }
+            },
+            
+            // Metallic sphere
+            Sphere {
+                center: vec3(2.5, 0.5, -0.5),
+                radius: 0.5,
+                material: Material {
+                    albedo: vec3(0.7, 0.7, 0.9),
+                    emission: vec3(0.0, 0.0, 0.0),
+                    roughness: 0.3,
+                    metallic: 1.0,
+                    ior: 1.5
+                }
+            },
+            
+            // Light source
+            Sphere {
+                center: vec3(0.0, 5.0, 5.0),
+                radius: 1.5,
+                material: Material {
+                    albedo: vec3(0.0, 0.0, 0.0),
+                    emission: vec3(1.0, 1.0, 0.9),
+                    roughness: 0.0,
+                    metallic: 0.0,
+                    ior: 1.0
+                }
+            }
+        ];
+    }
+    
+    // Find closest hit in scene
+    func hitScene(scene: [Sphere], ray: Ray, t_min: float, t_max: float) -> HitRecord? {
+        var closest: HitRecord? = nil;
+        var closest_t = t_max;
+        
+        for sphere in scene {
+            let hit = hitSphere(sphere, ray, t_min, closest_t);
+            if hit != nil {
+                closest_t = hit!.t;
+                closest = hit;
+            }
+        }
+        
+        return closest;
+    }
+    
+    // Compute color for a ray
+    func traceRay(scene: [Sphere], ray: Ray, depth: int) -> Vec3 {
+        if depth >= MAX_DEPTH {
+            return vec3(0.0, 0.0, 0.0);
+        }
+        
+        let hit = hitScene(scene, ray, EPSILON, INFINITY);
+        
+        if hit != nil {
+            // Emissive material
+            let emission = hit!.material.emission;
+            if length(emission) > 0.0 {
+                return emission;
+            }
+            
+            // Russian Roulette for ray termination
+            let p = math.max(hit!.material.albedo.x, 
+                           math.max(hit!.material.albedo.y, 
+                                   hit!.material.albedo.z));
+            
+            if randomFloat() > p {
+                return vec3(0.0, 0.0, 0.0);
+            }
+            
+            // Determine scattered ray
+            let scattered: Ray;
+            let attenuation: Vec3;
+            
+            let roughness = hit!.material.roughness;
+            let metallic = hit!.material.metallic;
+            
+            if randomFloat() < metallic {
+                // Metallic reflection
+                let reflected = reflect(normalize(ray.direction), hit!.normal);
+                let fuzz = roughness;
+                let direction = add(reflected, scale(randomInUnitSphere(), fuzz));
+                scattered = Ray {
+                    origin: hit!.point,
+                    direction: direction
+                };
+                attenuation = hit!.material.albedo;
+            } else if randomFloat() < 0.8 {
+                // Diffuse reflection
+                let target = add(hit!.point, add(hit!.normal, randomInUnitSphere()));
+                scattered = Ray {
+                    origin: hit!.point,
+                    direction: normalize(sub(target, hit!.point))
+                };
+                attenuation = hit!.material.albedo;
+            } else {
+                // Refraction
+                let outward_normal: Vec3;
+                let ni_over_nt: float;
+                let cosine: float;
+                
+                let ray_dir = normalize(ray.direction);
+                let dot_val = dot(ray_dir, hit!.normal);
+                
+                if dot_val > 0.0 {
+                    outward_normal = scale(hit!.normal, -1.0);
+                    ni_over_nt = hit!.material.ior;
+                    cosine = hit!.material.ior * dot_val;
+                } else {
+                    outward_normal = hit!.normal;
+                    ni_over_nt = 1.0 / hit!.material.ior;
+                    cosine = -dot_val;
+                }
+                
+                let refracted = refract(ray_dir, outward_normal, ni_over_nt);
+                if refracted != nil {
+                    // Use refracted ray
+                    scattered = Ray {
+                        origin: hit!.point,
+                        direction: refracted!
+                    };
+                } else {
+                    // Total internal reflection
+                    let reflected = reflect(ray_dir, hit!.normal);
+                    scattered = Ray {
+                        origin: hit!.point,
+                        direction: reflected
+                    };
+                }
+                attenuation = vec3(1.0, 1.0, 1.0);
+            }
+            
+            let scattered_color = traceRay(scene, scattered, depth + 1);
+            return mul(attenuation, scattered_color);
+        } else {
+            // Sky color
+            let unit_direction = normalize(ray.direction);
+            let t = 0.5 * (unit_direction.y + 1.0);
+            return add(scale(vec3(0.5, 0.7, 1.0), t),
+                      scale(vec3(1.0, 1.0, 1.0), 1.0 - t));
+        }
+    }
+    
+    // Camera
+    struct Camera {
+        origin: Vec3,
+        lower_left_corner: Vec3,
+        horizontal: Vec3,
+        vertical: Vec3,
+        u: Vec3,
+        v: Vec3,
+        w: Vec3,
+        lens_radius: float
+    }
+    
+    func createCamera(lookfrom: Vec3, lookat: Vec3, vup: Vec3,
+                     vfov: float, aspect: float, aperture: float,
+                     focus_dist: float) -> Camera {
+        let theta = vfov * math.PI / 180.0;
+        let half_height = math.tan(theta / 2.0);
+        let half_width = aspect * half_height;
+        
+        let w = normalize(sub(lookfrom, lookat));
+        let u = normalize(cross(vup, w));
+        let v = cross(w, u);
+        
+        let llc = sub(sub(sub(lookfrom, scale(u, half_width * focus_dist)),
+                         scale(v, half_height * focus_dist)),
+                     scale(w, focus_dist));
+        
+        let horizontal = scale(u, 2.0 * half_width * focus_dist);
+        let vertical = scale(v, 2.0 * half_height * focus_dist);
+        
+        return Camera {
+            origin: lookfrom,
+            lower_left_corner: llc,
+            horizontal: horizontal,
+            vertical: vertical,
+            u: u,
+            v: v,
+            w: w,
+            lens_radius: aperture / 2.0
+        };
+    }
+    
+    func getRay(camera: Camera, s: float, t: float) -> Ray {
+        let rd = scale(randomInUnitDisk(), camera.lens_radius);
+        let offset = add(scale(camera.u, rd.x), scale(camera.v, rd.y));
+        
+        let origin = add(camera.origin, offset);
+        let direction = sub(add(add(camera.lower_left_corner,
+                                  scale(camera.horizontal, s)),
+                              scale(camera.vertical, t)),
+                          origin);
+        
+        return Ray {
+            origin: origin,
+            direction: direction
+        };
+    }
+    
+    // Render image
+    func render(scene: [Sphere], camera: Camera, width: int, height: int,
+               samples: int) -> [[Vec3]] {
+        var image = [] as [[Vec3]];
+        
+        for var j = 0; j < height; j = j + 1 {
+            var row = [] as [Vec3];
+            
+            for var i = 0; i < width; i = i + 1 {
+                var color = vec3(0.0, 0.0, 0.0);
+                
+                for var s = 0; s < samples; s = s + 1 {
+                    let u = (i as float + randomFloat()) / width as float;
+                    let v = (j as float + randomFloat()) / height as float;
+                    
+                    let ray = getRay(camera, u, v);
+                    color = add(color, traceRay(scene, ray, 0));
+                }
+                
+                // Average samples
+                color = scale(color, 1.0 / samples as float);
+                
+                // Gamma correction
+                color = vec3(math.sqrt(color.x),
+                           math.sqrt(color.y),
+                           math.sqrt(color.z));
+                
+                row.push(color);
+            }
+            
+            image.push(row);
+            
+            // Progress indicator
+            if j % 50 == 0 {
+                let progress = (j as float / height as float * 100.0) as int;
+                print("Rendering: " + progress as string + "%");
+            }
+        }
+        
+        return image;
+    }
+    
+    // Save image to PPM format
+    func savePPM(image: [[Vec3]], filename: string) -> void {
+        let file = io.open(filename, "w");
+        
+        let height = image.length;
+        let width = image[0].length;
+        
+        file.write("P3\n");
+        file.write(width as string + " " + height as string + "\n");
+        file.write("255\n");
+        
+        for var j = height - 1; j >= 0; j = j - 1 {
+            for var i = 0; i < width; i = i + 1 {
+                let pixel = image[j][i];
+                
+                let r = (math.clamp(pixel.x, 0.0, 1.0) * 255.99) as int;
+                let g = (math.clamp(pixel.y, 0.0, 1.0) * 255.99) as int;
+                let b = (math.clamp(pixel.z, 0.0, 1.0) * 255.99) as int;
+                
+                file.write(r as string + " " + g as string + " " + b as string + "\n");
+            }
+        }
+        
+        file.close();
+    }
+    
+    // Benchmark function
+    pub func runBenchmark() -> void {
+        print("Ray Tracer Benchmark");
+        print("====================");
+        
+        // Create scene
+        print("Creating scene...");
+        let scene = createScene();
+        
+        // Create camera
+        let lookfrom = vec3(13.0, 2.0, 3.0);
+        let lookat = vec3(0.0, 0.0, 0.0);
+        let vup = vec3(0.0, 1.0, 0.0);
+        let vfov = 20.0;
+        let aspect = WIDTH as float / HEIGHT as float;
+        let aperture = 0.1;
+        let focus_dist = 10.0;
+        
+        let camera = createCamera(lookfrom, lookat, vup, vfov, aspect,
+                                 aperture, focus_dist);
+        
+        // Warmup
+        print("Warming up...");
+        let test_scene = [scene[0], scene[1]];
+        let test_image = render(test_scene, camera, 100, 100, 1);
+        
+        // Full render
+        print("Rendering image: " + WIDTH as string + "x" + HEIGHT as string);
+        print("Samples per pixel: " + SAMPLES_PER_PIXEL as string);
+        print("Max ray depth: " + MAX_DEPTH as string);
+        
+        let start_time = time.now();
+        
+        let image = render(scene, camera, WIDTH, HEIGHT, SAMPLES_PER_PIXEL);
+        
+        let end_time = time.now();
+        let duration = (end_time - start_time) / 1000.0; // seconds
+        
+        // Statistics
+        let total_rays = WIDTH * HEIGHT * SAMPLES_PER_PIXEL;
+        let rays_per_second = total_rays as float / duration;
+        
+        print("\nBenchmark Results:");
+        print("Render time: " + duration as string + " seconds");
+        print("Total rays: " + total_rays as string);
+        print("Performance: " + rays_per_second as string + " rays/second");
+        print("           : " + (rays_per_second / 1e6) as string + " Mrays/second");
+        
+        // Save image
+        print("\nSaving image...");
+        savePPM(image, "ray_tracer_output.ppm");
+        print("Image saved as ray_tracer_output.ppm");
+        
+        // Verify rendering
+        let center_pixel = image[HEIGHT / 2][WIDTH / 2];
+        print("\nCenter pixel color:");
+        print("R: " + center_pixel.x as string);
+        print("G: " + center_pixel.y as string);
+        print("B: " + center_pixel.z as string);
+        
+        // Simple validation
+        let brightness = (center_pixel.x + center_pixel.y + center_pixel.z) / 3.0;
+        if brightness > 0.1 && brightness < 0.9 {
+            print("✓ Rendering appears valid");
+        } else {
+            print("✗ Rendering may have issues");
+        }
+    }
+}
+
+// Main entry point
+func main() -> int {
+    ray_tracer.runBenchmark();
+    return 0;
+}

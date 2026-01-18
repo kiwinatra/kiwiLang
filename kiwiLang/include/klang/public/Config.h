@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <functional>
 
-namespace klang {
+namespace kiwiLang {
 
 // Forward declarations
 class Runtime;
@@ -20,13 +20,13 @@ constexpr uint32_t CONFIG_VERSION_MINOR = 0;
 constexpr uint32_t CONFIG_VERSION_PATCH = 0;
 
 // Build configuration
-#ifdef KLANG_DEBUG
+#ifdef kiwiLang_DEBUG
     constexpr bool IS_DEBUG_BUILD = true;
 #else
     constexpr bool IS_DEBUG_BUILD = false;
 #endif
 
-#ifdef KLANG_RELEASE
+#ifdef kiwiLang_RELEASE
     constexpr bool IS_RELEASE_BUILD = true;
 #else
     constexpr bool IS_RELEASE_BUILD = false;
@@ -34,120 +34,120 @@ constexpr uint32_t CONFIG_VERSION_PATCH = 0;
 
 // Platform detection
 #if defined(_WIN32) || defined(_WIN64)
-    #define KLANG_WINDOWS 1
+    #define kiwiLang_WINDOWS 1
     constexpr const char* PLATFORM_NAME = "Windows";
 #elif defined(__APPLE__) && defined(__MACH__)
-    #define KLANG_MACOS 1
+    #define kiwiLang_MACOS 1
     constexpr const char* PLATFORM_NAME = "macOS";
 #elif defined(__linux__)
-    #define KLANG_LINUX 1
+    #define kiwiLang_LINUX 1
     constexpr const char* PLATFORM_NAME = "Linux";
 #elif defined(__FreeBSD__)
-    #define KLANG_FREEBSD 1
+    #define kiwiLang_FREEBSD 1
     constexpr const char* PLATFORM_NAME = "FreeBSD";
 #elif defined(__OpenBSD__)
-    #define KLANG_OPENBSD 1
+    #define kiwiLang_OPENBSD 1
     constexpr const char* PLATFORM_NAME = "OpenBSD";
 #elif defined(__NetBSD__)
-    #define KLANG_NETBSD 1
+    #define kiwiLang_NETBSD 1
     constexpr const char* PLATFORM_NAME = "NetBSD";
 #elif defined(__DragonFly__)
-    #define KLANG_DRAGONFLY 1
+    #define kiwiLang_DRAGONFLY 1
     constexpr const char* PLATFORM_NAME = "DragonFly";
 #elif defined(__sun) && defined(__SVR4)
-    #define KLANG_SOLARIS 1
+    #define kiwiLang_SOLARIS 1
     constexpr const char* PLATFORM_NAME = "Solaris";
 #elif defined(__HAIKU__)
-    #define KLANG_HAIKU 1
+    #define kiwiLang_HAIKU 1
     constexpr const char* PLATFORM_NAME = "Haiku";
 #elif defined(__EMSCRIPTEN__)
-    #define KLANG_WASM 1
+    #define kiwiLang_WASM 1
     constexpr const char* PLATFORM_NAME = "WebAssembly";
 #else
-    #define KLANG_UNKNOWN 1
+    #define kiwiLang_UNKNOWN 1
     constexpr const char* PLATFORM_NAME = "Unknown";
 #endif
 
 // Architecture detection
 #if defined(__x86_64__) || defined(_M_X64)
-    #define KLANG_X86_64 1
+    #define kiwiLang_X86_64 1
     constexpr const char* ARCH_NAME = "x86_64";
 #elif defined(__i386__) || defined(_M_IX86)
-    #define KLANG_X86 1
+    #define kiwiLang_X86 1
     constexpr const char* ARCH_NAME = "x86";
 #elif defined(__aarch64__) || defined(_M_ARM64)
-    #define KLANG_ARM64 1
+    #define kiwiLang_ARM64 1
     constexpr const char* ARCH_NAME = "ARM64";
 #elif defined(__arm__) || defined(_M_ARM)
-    #define KLANG_ARM 1
+    #define kiwiLang_ARM 1
     constexpr const char* ARCH_NAME = "ARM";
 #elif defined(__powerpc64__)
-    #define KLANG_PPC64 1
+    #define kiwiLang_PPC64 1
     constexpr const char* ARCH_NAME = "PPC64";
 #elif defined(__powerpc__)
-    #define KLANG_PPC 1
+    #define kiwiLang_PPC 1
     constexpr const char* ARCH_NAME = "PPC";
 #elif defined(__riscv) && (__riscv_xlen == 64)
-    #define KLANG_RISCV64 1
+    #define kiwiLang_RISCV64 1
     constexpr const char* ARCH_NAME = "RISC-V64";
 #elif defined(__riscv) && (__riscv_xlen == 32)
-    #define KLANG_RISCV32 1
+    #define kiwiLang_RISCV32 1
     constexpr const char* ARCH_NAME = "RISC-V32";
 #elif defined(__mips64)
-    #define KLANG_MIPS64 1
+    #define kiwiLang_MIPS64 1
     constexpr const char* ARCH_NAME = "MIPS64";
 #elif defined(__mips__)
-    #define KLANG_MIPS 1
+    #define kiwiLang_MIPS 1
     constexpr const char* ARCH_NAME = "MIPS";
 #elif defined(__s390x__)
-    #define KLANG_S390X 1
+    #define kiwiLang_S390X 1
     constexpr const char* ARCH_NAME = "S390X";
 #elif defined(__alpha__)
-    #define KLANG_ALPHA 1
+    #define kiwiLang_ALPHA 1
     constexpr const char* ARCH_NAME = "Alpha";
 #elif defined(__sparc__)
-    #define KLANG_SPARC 1
+    #define kiwiLang_SPARC 1
     constexpr const char* ARCH_NAME = "SPARC";
 #elif defined(__EMSCRIPTEN__)
-    #define KLANG_WASM32 1
+    #define kiwiLang_WASM32 1
     constexpr const char* ARCH_NAME = "WASM32";
 #else
-    #define KLANG_UNKNOWN_ARCH 1
+    #define kiwiLang_UNKNOWN_ARCH 1
     constexpr const char* ARCH_NAME = "Unknown";
 #endif
 
 // Compiler detection
 #if defined(__clang__)
-    #define KLANG_CLANG 1
+    #define kiwiLang_CLANG 1
     constexpr const char* COMPILER_NAME = "Clang";
     constexpr uint32_t COMPILER_VERSION = (__clang_major__ * 10000) + (__clang_minor__ * 100) + __clang_patchlevel__;
 #elif defined(__GNUC__) && !defined(__clang__)
-    #define KLANG_GCC 1
+    #define kiwiLang_GCC 1
     constexpr const char* COMPILER_NAME = "GCC";
     constexpr uint32_t COMPILER_VERSION = (__GNUC__ * 10000) + (__GNUC_MINOR__ * 100) + __GNUC_PATCHLEVEL__;
 #elif defined(_MSC_VER)
-    #define KLANG_MSVC 1
+    #define kiwiLang_MSVC 1
     constexpr const char* COMPILER_NAME = "MSVC";
     constexpr uint32_t COMPILER_VERSION = _MSC_VER;
 #elif defined(__INTEL_COMPILER)
-    #define KLANG_ICC 1
+    #define kiwiLang_ICC 1
     constexpr const char* COMPILER_NAME = "Intel";
     constexpr uint32_t COMPILER_VERSION = __INTEL_COMPILER;
 #else
-    #define KLANG_UNKNOWN_COMPILER 1
+    #define kiwiLang_UNKNOWN_COMPILER 1
     constexpr const char* COMPILER_NAME = "Unknown";
     constexpr uint32_t COMPILER_VERSION = 0;
 #endif
 
 // Endianness detection
 #if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-    #define KLANG_LITTLE_ENDIAN 1
+    #define kiwiLang_LITTLE_ENDIAN 1
     constexpr bool IS_LITTLE_ENDIAN = true;
 #elif defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    #define KLANG_BIG_ENDIAN 1
+    #define kiwiLang_BIG_ENDIAN 1
     constexpr bool IS_LITTLE_ENDIAN = false;
 #elif defined(_WIN32) || defined(__LITTLE_ENDIAN__)
-    #define KLANG_LITTLE_ENDIAN 1
+    #define kiwiLang_LITTLE_ENDIAN 1
     constexpr bool IS_LITTLE_ENDIAN = true;
 #else
     #error "Cannot determine endianness"
@@ -446,46 +446,46 @@ namespace config_utils {
 } // namespace config_utils
 
 // Configuration macros for compile-time options
-#define KLANG_CONFIG_OPTION(name, default_value, description) \
-    namespace klang::config::options { \
+#define kiwiLang_CONFIG_OPTION(name, default_value, description) \
+    namespace kiwiLang::config::options { \
         constexpr auto name = default_value; \
     }
 
-#define KLANG_CONFIG_FEATURE(name, enabled, description) \
-    namespace klang::config::features { \
+#define kiwiLang_CONFIG_FEATURE(name, enabled, description) \
+    namespace kiwiLang::config::features { \
         constexpr bool name = enabled; \
     }
 
-#define KLANG_CONFIG_DEFINE(type, name, value) \
-    namespace klang::config::defines { \
+#define kiwiLang_CONFIG_DEFINE(type, name, value) \
+    namespace kiwiLang::config::defines { \
         constexpr type name = value; \
     }
 
 // Predefined configuration options
-KLANG_CONFIG_OPTION(max_memory, size_t(1024 * 1024 * 1024), "Maximum memory usage")
-KLANG_CONFIG_OPTION(stack_size, size_t(64 * 1024), "Stack size")
-KLANG_CONFIG_OPTION(gc_threshold, size_t(8 * 1024 * 1024), "GC threshold")
-KLANG_CONFIG_OPTION(jit_cache_size, size_t(4 * 1024 * 1024), "JIT cache size")
-KLANG_CONFIG_OPTION(max_recursion_depth, uint32_t(1000), "Maximum recursion depth")
+kiwiLang_CONFIG_OPTION(max_memory, size_t(1024 * 1024 * 1024), "Maximum memory usage")
+kiwiLang_CONFIG_OPTION(stack_size, size_t(64 * 1024), "Stack size")
+kiwiLang_CONFIG_OPTION(gc_threshold, size_t(8 * 1024 * 1024), "GC threshold")
+kiwiLang_CONFIG_OPTION(jit_cache_size, size_t(4 * 1024 * 1024), "JIT cache size")
+kiwiLang_CONFIG_OPTION(max_recursion_depth, uint32_t(1000), "Maximum recursion depth")
 
-KLANG_CONFIG_FEATURE(enable_jit, true, "Enable JIT compilation")
-KLANG_CONFIG_FEATURE(enable_gc, true, "Enable garbage collection")
-KLANG_CONFIG_FEATURE(enable_assertions, IS_DEBUG_BUILD, "Enable runtime assertions")
-KLANG_CONFIG_FEATURE(enable_logging, IS_DEBUG_BUILD, "Enable logging")
-KLANG_CONFIG_FEATURE(enable_profiling, false, "Enable profiling")
-KLANG_CONFIG_FEATURE(enable_debugging, IS_DEBUG_BUILD, "Enable debugging")
-KLANG_CONFIG_FEATURE(enable_sanitizers, IS_DEBUG_BUILD, "Enable sanitizers")
-KLANG_CONFIG_FEATURE(enable_coverage, false, "Enable code coverage")
-KLANG_CONFIG_FEATURE(enable_security, true, "Enable security features")
-KLANG_CONFIG_FEATURE(enable_threading, false, "Enable threading support")
+kiwiLang_CONFIG_FEATURE(enable_jit, true, "Enable JIT compilation")
+kiwiLang_CONFIG_FEATURE(enable_gc, true, "Enable garbage collection")
+kiwiLang_CONFIG_FEATURE(enable_assertions, IS_DEBUG_BUILD, "Enable runtime assertions")
+kiwiLang_CONFIG_FEATURE(enable_logging, IS_DEBUG_BUILD, "Enable logging")
+kiwiLang_CONFIG_FEATURE(enable_profiling, false, "Enable profiling")
+kiwiLang_CONFIG_FEATURE(enable_debugging, IS_DEBUG_BUILD, "Enable debugging")
+kiwiLang_CONFIG_FEATURE(enable_sanitizers, IS_DEBUG_BUILD, "Enable sanitizers")
+kiwiLang_CONFIG_FEATURE(enable_coverage, false, "Enable code coverage")
+kiwiLang_CONFIG_FEATURE(enable_security, true, "Enable security features")
+kiwiLang_CONFIG_FEATURE(enable_threading, false, "Enable threading support")
 
-KLANG_CONFIG_DEFINE(bool, use_sse, true)
-KLANG_CONFIG_DEFINE(bool, use_avx, true)
-KLANG_CONFIG_DEFINE(bool, use_avx2, true)
-KLANG_CONFIG_DEFINE(bool, use_avx512, false)
-KLANG_CONFIG_DEFINE(bool, use_fma, true)
-KLANG_CONFIG_DEFINE(bool, use_bmi, true)
-KLANG_CONFIG_DEFINE(uint32_t, cache_line_size, 64)
-KLANG_CONFIG_DEFINE(uint32_t, page_size, 4096)
+kiwiLang_CONFIG_DEFINE(bool, use_sse, true)
+kiwiLang_CONFIG_DEFINE(bool, use_avx, true)
+kiwiLang_CONFIG_DEFINE(bool, use_avx2, true)
+kiwiLang_CONFIG_DEFINE(bool, use_avx512, false)
+kiwiLang_CONFIG_DEFINE(bool, use_fma, true)
+kiwiLang_CONFIG_DEFINE(bool, use_bmi, true)
+kiwiLang_CONFIG_DEFINE(uint32_t, cache_line_size, 64)
+kiwiLang_CONFIG_DEFINE(uint32_t, page_size, 4096)
 
 }

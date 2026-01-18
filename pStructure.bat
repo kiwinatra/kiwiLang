@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-echo Creating kiwiLang (KLang) project structure...
+echo Creating kiwiLang (kiwiLang) project structure...
 echo.
 
 set ROOT_DIR=kiwiLang
@@ -102,8 +102,8 @@ type nul > ray_tracer.kiwi
 cd ..\..
 mkdir include
 cd include
-mkdir klang
-cd klang
+mkdir kiwiLang
+cd kiwiLang
 mkdir public
 cd public
 type nul > Compiler.h
@@ -217,8 +217,8 @@ type nul > Driver.cpp
 cd ..
 mkdir lib
 cd lib
-mkdir klangrt
-cd klangrt
+mkdir kiwiLangrt
+cd kiwiLangrt
 type nul > CMakeLists.txt
 mkdir src
 cd src
@@ -267,8 +267,8 @@ type nul > catch.hpp
 cd ..\..
 mkdir tools
 cd tools
-type nul > klang-format.cpp
-type nul > klang-lint.cpp
+type nul > kiwiLang-format.cpp
+type nul > kiwiLang-lint.cpp
 mkdir scripts
 cd scripts
 type nul > generate_parser.py

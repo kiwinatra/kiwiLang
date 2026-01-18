@@ -1,4 +1,4 @@
-# CompilerWarnings.cmake - Configure compiler warnings for KLang
+# CompilerWarnings.cmake - Configure compiler warnings for kiwiLang
 
 include(CheckCXXCompilerFlag)
 
@@ -24,7 +24,7 @@ function(set_default_warnings target)
             /w14928
         )
         
-        if(KLANG_WARNINGS_AS_ERRORS)
+        if(kiwiLang_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE /WX)
         endif()
         
@@ -107,7 +107,7 @@ function(set_default_warnings target)
             )
         endif()
         
-        if(KLANG_WARNINGS_AS_ERRORS)
+        if(kiwiLang_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE -Werror)
         endif()
     endif()
@@ -398,11 +398,11 @@ function(enable_compiler_warnings target)
     set_default_warnings(${target})
     
     # Apply additional warning sets based on configuration
-    if(KLANG_ENABLE_SANITIZERS)
+    if(kiwiLang_ENABLE_SANITIZERS)
         set_sanitizer_warnings(${target})
     endif()
     
-    if(KLANG_ENABLE_COVERAGE)
+    if(kiwiLang_ENABLE_COVERAGE)
         set_coverage_warnings(${target})
     endif()
     
@@ -414,12 +414,12 @@ function(enable_compiler_warnings target)
     endif()
     
     # C++20 specific warnings
-    if(KLANG_CXX_STANDARD GREATER_EQUAL 20)
+    if(kiwiLang_CXX_STANDARD GREATER_EQUAL 20)
         set_cpp20_warnings(${target})
     endif()
     
     # Strict warnings if requested
-    if(KLANG_MAX_WARNINGS)
+    if(kiwiLang_MAX_WARNINGS)
         set_strict_warnings(${target})
     endif()
 endfunction()

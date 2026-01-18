@@ -8,7 +8,7 @@
 #include <functional>
 #include <memory>
 
-namespace klang {
+namespace kiwiLang {
 
 class SourceManager;
 
@@ -321,4 +321,4 @@ inline std::ostream& operator<<(std::ostream& os, const SourceRange& range) {
     return os << range.to_string();
 }
 
-} // namespace klang
+} // namespace kiwiLang

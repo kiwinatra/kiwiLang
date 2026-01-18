@@ -1,0 +1,311 @@
+// Hello World example for KiwiLang
+// Demonstrates basic language features
+
+module hello {
+    // Constants
+    const GREETING: string = "Hello";
+    const DEFAULT_NAME: string = "World";
+    const VERSION: string = "1.0.0";
+    
+    // Greeting function
+    pub func sayHello(name: string?) -> string {
+        let actualName = if name != nil then name! else DEFAULT_NAME;
+        return GREETING + ", " + actualName + "!";
+    }
+    
+    // Formal greeting with title
+    pub func sayFormalHello(title: string, name: string) -> string {
+        return GREETING + ", " + title + " " + name + "!";
+    }
+    
+    // Greeting in multiple languages
+    pub func multilingualGreeting(name: string, language: string) -> string {
+        match language {
+            case "en" => return "Hello, " + name + "!";
+            case "es" => return "¡Hola, " + name + "!";
+            case "fr" => return "Bonjour, " + name + "!";
+            case "de" => return "Hallo, " + name + "!";
+            case "ja" => return "こんにちは, " + name + "!";
+            case "ru" => return "Привет, " + name + "!";
+            case "zh" => return "你好, " + name + "!";
+            case "ko" => return "안녕하세요, " + name + "!";
+            case _ => return sayHello(name);
+        }
+    }
+    
+    // Greet multiple people
+    pub func greetMany(names: [string]) -> [string] {
+        var greetings = [] as [string];
+        
+        for name in names {
+            greetings.push(sayHello(name));
+        }
+        
+        return greetings;
+    }
+    
+    // Count greetings
+    pub func countGreetings(names: [string]) -> int {
+        return names.length;
+    }
+    
+    // Greet with exclamation level
+    pub func excitedGreeting(name: string, level: int) -> string {
+        let base = sayHello(name);
+        let exclamations = "!" * math.clamp(level, 1, 10);
+        return base.substring(0, base.length - 1) + exclamations;
+    }
+    
+    // Timed greeting
+    pub func timeBasedGreeting(name: string) -> string {
+        let hour = time.getHour();
+        
+        if hour < 12 {
+            return "Good morning, " + name + "!";
+        } else if hour < 17 {
+            return "Good afternoon, " + name + "!";
+        } else if hour < 21 {
+            return "Good evening, " + name + "!";
+        } else {
+            return "Good night, " + name + "!";
+        }
+    }
+    
+    // ASCII art greeting
+    pub func asciiArtGreeting(name: string) -> string {
+        return """
+          _    _          _   _          
+         | |  | |        | | | |         
+         | |__| | ___  __| | | | ___     
+         |  __  |/ _ \\/ _` | | |/ _ \\    
+         | |  | |  __/ (_| | | | (_) |   
+         |_|  |_|\\___|\\__,_| |_|\\___/    
+                                        
+        """ + "\n" + sayHello(name);
+    }
+    
+    // Colorful greeting (if terminal supports colors)
+    pub func colorfulGreeting(name: string, color: string) -> string {
+        let colorCode = match color {
+            case "red" => "\x1b[31m";
+            case "green" => "\x1b[32m";
+            case "yellow" => "\x1b[33m";
+            case "blue" => "\x1b[34m";
+            case "magenta" => "\x1b[35m";
+            case "cyan" => "\x1b[36m";
+            case "white" => "\x1b[37m";
+            case _ => "\x1b[0m";
+        };
+        
+        let reset = "\x1b[0m";
+        return colorCode + sayHello(name) + reset;
+    }
+    
+    // Greeting with formatting
+    pub func formattedGreeting(name: string, format: string) -> string {
+        match format {
+            case "upper" => return sayHello(name).toUpper();
+            case "lower" => return sayHello(name).toLower();
+            case "title" => return sayHello(name).toTitleCase();
+            case "reverse" => return sayHello(name).reverse();
+            case _ => return sayHello(name);
+        }
+    }
+    
+    // Recursive greeting (for fun)
+    pub func recursiveGreeting(name: string, depth: int) -> string {
+        if depth <= 0 {
+            return "";
+        }
+        
+        let greeting = sayHello(name);
+        if depth == 1 {
+            return greeting;
+        }
+        
+        return greeting + "\n" + recursiveGreeting(name, depth - 1);
+    }
+    
+    // Delayed greeting (async)
+    async pub func delayedGreeting(name: string, delayMs: int) -> string {
+        await time.sleep(delayMs);
+        return sayHello(name);
+    }
+    
+    // Greeting generator
+    generator pub func greetingSequence(names: [string]) -> string {
+        for name in names {
+            yield sayHello(name);
+        }
+    }
+    
+    // Validate name
+    pub func isValidName(name: string) -> bool {
+        if name.length == 0 {
+            return false;
+        }
+        
+        // Check if name contains only letters, spaces, and hyphens
+        for ch in name {
+            if !ch.isAlpha() && ch != ' ' && ch != '-' && ch != '\'' {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    // Get greeting statistics
+    pub func getGreetingStats(names: [string]) -> map[string, int] {
+        var stats = {} as map[string, int];
+        
+        for name in names {
+            let greeting = sayHello(name);
+            stats[greeting] = if stats.contains(greeting) then stats[greeting] + 1 else 1;
+        }
+        
+        return stats;
+    }
+    
+    // Greeting with emoji
+    pub func emojiGreeting(name: string, emoji: string) -> string {
+        return sayHello(name) + " " + emoji;
+    }
+    
+    // Internationalized greeting with locale
+    pub func i18nGreeting(name: string, locale: string) -> string {
+        let translations = {
+            "en_US": "Hello, {name}!",
+            "es_ES": "¡Hola, {name}!",
+            "fr_FR": "Bonjour, {name}!",
+            "de_DE": "Hallo, {name}!",
+            "ja_JP": "こんにちは、{name}！",
+            "zh_CN": "你好，{name}！",
+            "ru_RU": "Привет, {name}!",
+            "ko_KR": "안녕하세요, {name}!",
+            "ar_SA": "مرحباً {name}!",
+            "hi_IN": "नमस्ते, {name}!"
+        } as map[string, string];
+        
+        let template = if translations.contains(locale) then 
+            translations[locale] else translations["en_US"];
+        
+        return template.replace("{name}", name);
+    }
+    
+    // Test all greetings
+    pub func runAllTests() -> [string] {
+        var results = [] as [string];
+        
+        // Test basic greeting
+        results.push("Basic: " + sayHello("Alice"));
+        
+        // Test formal greeting
+        results.push("Formal: " + sayFormalHello("Dr.", "Smith"));
+        
+        // Test multilingual
+        results.push("Spanish: " + multilingualGreeting("Juan", "es"));
+        
+        // Test many greetings
+        results.push("Many: " + greetMany(["A", "B", "C"]).join(", "));
+        
+        // Test excited greeting
+        results.push("Excited: " + excitedGreeting("Bob", 3));
+        
+        // Test time-based
+        results.push("Time-based: " + timeBasedGreeting("Charlie"));
+        
+        // Test validation
+        results.push("Valid name 'John': " + isValidName("John") as string);
+        results.push("Invalid name '123': " + isValidName("123") as string);
+        
+        return results;
+    }
+    
+    // Benchmark greeting performance
+    pub func benchmarkGreetings(iterations: int) -> map[string, float] {
+        let startTotal = time.now();
+        
+        // Benchmark sayHello
+        let startHello = time.now();
+        for var i = 0; i < iterations; i = i + 1 {
+            sayHello("Test");
+        }
+        let timeHello = (time.now() - startHello) as float / 1000.0;
+        
+        // Benchmark multilingual
+        let startMulti = time.now();
+        for var i = 0; i < iterations; i = i + 1 {
+            multilingualGreeting("Test", "es");
+        }
+        let timeMulti = (time.now() - startMulti) as float / 1000.0;
+        
+        let totalTime = (time.now() - startTotal) as float / 1000.0;
+        
+        return {
+            "iterations": iterations as float,
+            "total_time": totalTime,
+            "time_per_greeting": totalTime / iterations as float,
+            "sayHello_time": timeHello,
+            "multilingual_time": timeMulti,
+            "operations_per_second": iterations as float / totalTime
+        };
+    }
+    
+    // Main function - entry point
+    pub func main(args: [string]) -> int {
+        print("Hello World Example v" + VERSION);
+        print("======================" + "=" * VERSION.length);
+        print("");
+        
+        if args.length > 1 {
+            // Greet with provided names
+            for var i = 1; i < args.length; i = i + 1 {
+                print(sayHello(args[i]));
+            }
+        } else {
+            // Interactive mode
+            print("No names provided. Entering interactive mode.");
+            print("");
+            
+            while true {
+                print("Enter a name (or 'quit' to exit): ");
+                let name = io.readln().trim();
+                
+                if name == "quit" || name == "exit" {
+                    break;
+                }
+                
+                if name.length == 0 {
+                    print("Please enter a name.");
+                    continue;
+                }
+                
+                if !isValidName(name) {
+                    print("Invalid name. Please use only letters, spaces, and hyphens.");
+                    continue;
+                }
+                
+                print("");
+                print("Greetings:");
+                print("  Basic: " + sayHello(name));
+                print("  Formal: " + sayFormalHello("Mr.", name));
+                print("  Spanish: " + multilingualGreeting(name, "es"));
+                print("  Excited: " + excitedGreeting(name, 3));
+                print("  Time-based: " + timeBasedGreeting(name));
+                print("  Emoji: " + emojiGreeting(name, "👋"));
+                print("");
+                
+                // Show ASCII art for short names
+                if name.length <= 10 {
+                    print(asciiArtGreeting(name));
+                    print("");
+                }
+            }
+        }
+        
+        print("");
+        print("Thank you for using the Hello World example!");
+        return 0;
+    }
+}

@@ -1,12 +1,12 @@
 src/internal/Runtime/String.cpp
-#include "klang/internal/Runtime/String.h"
-#include "klang/internal/Runtime/VM.h"
-#include "klang/internal/Runtime/GC.h"
+#include "kiwiLang/internal/Runtime/String.h"
+#include "kiwiLang/internal/Runtime/VM.h"
+#include "kiwiLang/internal/Runtime/GC.h"
 #include <algorithm>
 #include <cstring>
 #include <xxhash.h>
 
-namespace klang {
+namespace kiwiLang {
 namespace internal {
 namespace runtime {
 
@@ -123,4 +123,4 @@ void StringTable::clear() {
 
 } // namespace runtime
 } // namespace internal
-} // namespace klang
+} // namespace kiwiLang

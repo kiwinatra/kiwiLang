@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <system_error>
 
-namespace klang {
+namespace kiwiLang {
 
 class Object;
 class MemoryManager;
@@ -416,4 +416,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace klang
+} // namespace kiwiLang
