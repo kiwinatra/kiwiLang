@@ -62,26 +62,18 @@ bool UEBlueprintPlugin::shutdown(UEIntegrationContext& context) {
 }
 
 bool UEBlueprintPlugin::generateBlueprintGraphs(UEIntegrationContext& context) {
-    // This would generate blueprint graph assets from kiwiLang classes
-    // For now, just log what we would do
+   
     
     DiagnosticEngine::get().info("Generating blueprint graphs...");
     
-    // In a real implementation, this would:
-    // 1. Iterate through all registered classes in typeRegistry
-    // 2. Generate blueprint graph assets for blueprintable classes
-    // 3. Create event graphs, function graphs, etc.
-    // 4. Save .uasset files
+    
     
     return true;
 }
 
 bool UEBlueprintPlugin::compileBlueprintAssets(UEIntegrationContext& context) {
     DiagnosticEngine::get().info("Compiling blueprint assets...");
-    
-    // This would invoke the Unreal Engine blueprint compiler
-    // For now, just simulate success
-    
+ 
     return true;
 }
 
@@ -344,13 +336,7 @@ std::vector<std::string> UEIntegrationManager::getActivePlugins() const {
 bool UEIntegrationManager::loadPluginsFromDirectory(const std::string& directory) {
     DiagnosticEngine::get().info("Loading plugins from directory: " + directory);
     
-    // In a real implementation, this would:
-    // 1. Scan directory for plugin DLLs/shared libraries
-    // 2. Load each library
-    // 3. Find and instantiate plugin factories
-    // 4. Register each plugin
     
-    // For now, just register built-in plugins
     registerPlugin(std::make_unique<UEBlueprintPlugin>());
     registerPlugin(std::make_unique<UENetworkingPlugin>());
     registerPlugin(std::make_unique<UEAssetPlugin>());

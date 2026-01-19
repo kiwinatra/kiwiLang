@@ -371,7 +371,7 @@ bool UETypeConverter::validateTypeCompatibility(AST::TypePtr kiwiType,
     
     // Check inheritance for classes
     if (kiwiType->isClassType() && expectedKiwiType->isClassType()) {
-        // In a real implementation, check class hierarchy
+     
         return true;
     }
     

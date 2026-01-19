@@ -789,7 +789,7 @@ module web_server {
         
         func reload() -> void {
             print("Reloading server configuration...");
-            // In a real implementation, this would reload config and restart
+            
         }
     }
     

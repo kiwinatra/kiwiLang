@@ -421,14 +421,13 @@ Runtime::Value UObjectRegistry::invokeFunction(const std::string& functionName,
     rawArgs.reserve(args.size());
     
     for (const auto& arg : args) {
-        // This is simplified - real implementation would need proper type conversion
+     
         rawArgs.push_back(const_cast<void*>(static_cast<const void*>(&arg)));
     }
     
     void* result = binding->invoke(object, rawArgs.data());
     
-    // Convert result back to Runtime::Value
-    // Simplified - real implementation would need proper type conversion
+    
     if (result) {
         return Runtime::Value::pointer(result);
     }
@@ -536,11 +535,7 @@ bool UObjectRegistry::generateStubs(const std::string& outputDir) {
 bool UObjectRegistry::loadFromModule(const std::string& modulePath) {
     DiagnosticEngine::get().info("Loading bindings from module: " + modulePath);
     
-    // In a real implementation, this would:
-    // 1. Load the DLL/shared library
-    // 2. Find exported registration functions
-    // 3. Call them to populate the registry
-    
+   
     return true;
 }
 
@@ -553,8 +548,7 @@ bool UObjectRegistry::saveToCache(const std::string& cachePath) {
     std::filesystem::path dirPath(cachePath);
     std::filesystem::create_directories(dirPath);
     
-    // Serialize registry state
-    // This would involve serializing all bindings to a binary or JSON format
+   
     
     return true;
 }

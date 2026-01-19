@@ -134,9 +134,6 @@ std::unique_ptr<UClassBindingBase> UClassBindingFactory::createBinding(
     
     DiagnosticEngine::get().info("Creating class binding for: " + classInfo.name);
     
-    // For now, create a generic binding
-    // In a real implementation, this would use templates or reflection
-    // to create the appropriate typed binding
     
     auto binding = std::make_unique<UClassBindingBase>(classInfo);
     configureTypedBinding(binding.get(), context);

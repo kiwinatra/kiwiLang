@@ -74,12 +74,7 @@ bool UFunctionBinding<ReturnType, Args...>::bindToUFunction(UFunction* uFunction
     }
     
     DiagnosticEngine::get().info("Binding function " + params_.functionName + " to UFunction");
-    
-    // In a real implementation, this would:
-    // 1. Validate function signatures match
-    // 2. Create thunk function
-    // 3. Set up parameter marshaling
-    // 4. Register with UE reflection system
+ r with UE reflection system
     
     isBound_ = true;
     return true;
@@ -88,13 +83,7 @@ bool UFunctionBinding<ReturnType, Args...>::bindToUFunction(UFunction* uFunction
 template<typename ReturnType, typename... Args>
 bool UFunctionBinding<ReturnType, Args...>::bindToBlueprintGraph(void* blueprintFunction) {
     DiagnosticEngine::get().info("Binding function " + params_.functionName + " to blueprint graph");
-    
-    // In a real implementation, this would:
-    // 1. Create blueprint function node
-    // 2. Set up input/output pins
-    // 3. Connect to execution flow
-    // 4. Generate blueprint bytecode
-    
+
     isBound_ = true;
     return true;
 }

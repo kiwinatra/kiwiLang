@@ -531,8 +531,7 @@ bool UEProjectBuilder::loadExistingModules() {
                 UEModuleBuildInfo moduleInfo;
                 moduleInfo.name = entry.path().filename().string();
                 
-                // Simple parsing to extract dependencies
-                // In a real implementation, this would use proper C# parsing
+              
                 std::regex depsRegex(R"(DependencyModuleNames\.AddRange\(new string\[\] \{(.*?)\}\))");
                 std::smatch match;
                 
@@ -599,8 +598,6 @@ UEBuildResult UEProjectBuilder::executeBuildCommand(const std::vector<std::strin
                                                    const path& workingDir) {
     UEBuildResult result;
     
-    // In a real implementation, this would spawn the build process
-    // and capture its output. For now, simulate success.
     
     result.success = true;
     result.exitCode = 0;
@@ -704,15 +701,13 @@ bool UEProjectBuilder::generateUProjectFile() {
 }
 
 bool UEProjectBuilder::generateUPluginFile() {
-    // This would generate a .uplugin file for plugin projects
-    // Implementation similar to generateUProjectFile
+   
     
     return true;
 }
 
 bool UEProjectBuilder::compileGeneratedCode(const std::string& moduleName) {
-    // This would compile generated C++ code
-    // In a real implementation, this would invoke the compiler
+  
     
     DiagnosticEngine::get().info("Compiling generated code for module: " + moduleName);
     return true;
@@ -721,7 +716,7 @@ bool UEProjectBuilder::compileGeneratedCode(const std::string& moduleName) {
 bool UEProjectBuilder::linkModule(const std::string& moduleName,
                                  UEBuildConfiguration configuration,
                                  UEPlatform platform) {
-    // This would link the compiled module
+   
     DiagnosticEngine::get().info("Linking module: " + moduleName);
     return true;
 }

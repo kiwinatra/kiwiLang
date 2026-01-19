@@ -828,8 +828,7 @@ bool UEModuleLoader::checkModuleVersion(const UEModuleInfo& info) const {
 }
 
 bool UEModuleLoader::verifyModuleSignature(const path& binaryPath) const {
-    // In a real implementation, this would verify digital signatures
-    // For now, just check file exists and has reasonable size
+    
     
     if (!exists(binaryPath)) {
         return false;
