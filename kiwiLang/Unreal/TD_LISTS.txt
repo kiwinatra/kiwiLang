@@ -1,33 +1,30 @@
-[x] kiwiLang/include/kiwiLang/Unreal/UnrealEngine.h
-[x] kiwiLang/include/kiwiLang/Unreal/UEConfig.h
-[x] kiwiLang/include/kiwiLang/Unreal/UETypes.h
-[x] kiwiLang/include/kiwiLang/Unreal/UEIntegration.h
-[x] kiwiLang/include/kiwiLang/Unreal/Bindings/UClassBinding.h
-[x] kiwiLang/include/kiwiLang/Unreal/Bindings/UFunctionBinding.h
-[x] kiwiLang/include/kiwiLang/Unreal/Bindings/UPropertyBinding.h
-[x] kiwiLang/include/kiwiLang/Unreal/Bindings/UObjectRegistry.h
-[x] kiwiLang/include/kiwiLang/Unreal/Integration/UEProjectBuilder.h
-[x] kiwiLang/include/kiwiLang/Unreal/Integration/UEModuleLoader.h
-[x] kiwiLang/include/kiwiLang/Unreal/Integration/UEEditorIntegration.h
-[x] kiwiLang/include/kiwiLang/Unreal/Types/UETypeConverter.h
-[x] kiwiLang/include/kiwiLang/Unreal/Types/UETypeSystem.h
-[x] kiwiLang/include/kiwiLang/Unreal/Types/UEBlueprintTypes.h
-[x] kiwiLang/include/kiwiLang/Unreal/CodeGen/UECodeGenerator.h
-[x] kiwiLang/include/kiwiLang/Unreal/CodeGen/UENativeStubs.h
-[x] kiwiLang/include/kiwiLang/Unreal/CodeGen/UEHeaderGenerator.h
-[x] kiwiLang/include/kiwiLang/Unreal/Runtime/UERuntime.h
-[x] kiwiLang/include/kiwiLang/Unreal/Runtime/UEGarbageCollector.h
-[x] kiwiLang/include/kiwiLang/Unreal/Runtime/UEObjectWrapper.h
-INCLUDE DONE YYAYAYA
--------------------------------------------------------------------
-
-[x] kiwiLang/src/kiwiLang/Unreal/UEConfig.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/UETypes.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/UEIntegration.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UClassBinding.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UFunctionBinding.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UPropertyBinding.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UObjectRegistry.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Integration/UEProjectBuilder.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Integration/UEModuleLoader.cpp
-[x] kiwiLang/src/kiwiLang/Unreal/Integration/UEEditorIntegration.cpp
+kiwiLang/include/kiwiLang/Optimization/PGO.h
+kiwiLang/include/kiwiLang/Optimization/LTO.h
+kiwiLang/include/kiwiLang/Optimization/Vectorization.h
+kiwiLang/include/kiwiLang/Optimization/ProfileCollector.h
+kiwiLang/include/kiwiLang/Optimization/HotPathDetector.h
+kiwiLang/include/kiwiLang/Optimization/SIMDIntrinsics.h
+kiwiLang/include/kiwiLang/Optimization/Parallelization.h
+kiwiLang/include/kiwiLang/Optimization/CacheOptimizer.h
+kiwiLang/include/kiwiLang/Optimization/BranchPrediction.h
+kiwiLang/include/kiwiLang/Optimization/DeadCodeElimination.h
+kiwiLang/include/kiwiLang/Optimization/ConstantFolding.h
+kiwiLang/include/kiwiLang/Optimization/RegisterAllocator.h
+kiwiLang/include/kiwiLang/Optimization/MemoryAliasAnalysis.h
+kiwiLang/include/kiwiLang/Optimization/InlineOptimizer.h
+kiwiLang/include/kiwiLang/Optimization/LoopOptimizer.h
+kiwiLang/src/kiwiLang/Optimization/PGO.cpp
+kiwiLang/src/kiwiLang/Optimization/LTO.cpp
+kiwiLang/src/kiwiLang/Optimization/Vectorization.cpp
+kiwiLang/src/kiwiLang/Optimization/ProfileCollector.cpp
+kiwiLang/src/kiwiLang/Optimization/HotPathDetector.cpp
+kiwiLang/src/kiwiLang/Optimization/SIMDIntrinsics.cpp
+kiwiLang/src/kiwiLang/Optimization/Parallelization.cpp
+kiwiLang/src/kiwiLang/Optimization/CacheOptimizer.cpp
+kiwiLang/src/kiwiLang/Optimization/BranchPrediction.cpp
+kiwiLang/src/kiwiLang/Optimization/DeadCodeElimination.cpp
+kiwiLang/src/kiwiLang/Optimization/ConstantFolding.cpp
+kiwiLang/src/kiwiLang/Optimization/RegisterAllocator.cpp
+kiwiLang/src/kiwiLang/Optimization/MemoryAliasAnalysis.cpp
+kiwiLang/src/kiwiLang/Optimization/InlineOptimizer.cpp
+kiwiLang/src/kiwiLang/Optimization/LoopOptimizer.cpp
