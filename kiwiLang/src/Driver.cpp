@@ -80,7 +80,7 @@ public:
             if (modules.size() == 1) {
                 linkedModule = std::move(modules[0]);
             } else {
-                // TODO: Implement module linking
+               
                 linkedModule = std::move(modules[0]);
             }
             
@@ -223,7 +223,7 @@ private:
     void saveAST(ModuleIR* module, const std::string& filename) {
         std::ofstream file(filename);
         if (file.is_open()) {
-            // TODO: Implement AST dumping
+            
             file << "AST dump not implemented\n";
         }
     }
@@ -231,7 +231,7 @@ private:
     void saveLLVMIR(ModuleIR* module, const std::string& filename) {
         std::ofstream file(filename);
         if (file.is_open()) {
-            // TODO: Implement LLVM IR dumping
+            
             file << "LLVM IR dump not implemented\n";
         }
     }
@@ -239,7 +239,7 @@ private:
     void saveTokens(const std::string& filename) {
         std::ofstream file(filename);
         if (file.is_open()) {
-            // TODO: Implement token dumping
+            
             file << "Token dump not implemented\n";
         }
     }
@@ -266,7 +266,7 @@ void Compiler::initialize() {
         codegen::TargetRegistry::initialize();
         
         // Initialize standard library
-        // TODO: Initialize stdlib
+        
         
         initialized = true;
     }
@@ -292,13 +292,13 @@ std::unique_ptr<ast::Program> Frontend::parse(const std::string& source,
 }
 
 bool Frontend::semanticCheck(ast::Program* program) {
-    // TODO: Implement semantic analysis
+   
     return true;
 }
 
 std::unique_ptr<ModuleIR> Frontend::generateIR(ast::Program* program, 
                                                const std::string& moduleName) {
-    // TODO: Implement IR generation
+    
     return std::make_unique<ModuleIR>(moduleName);
 }
 

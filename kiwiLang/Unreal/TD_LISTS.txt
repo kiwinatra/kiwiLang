@@ -21,22 +21,13 @@
 INCLUDE DONE YYAYAYA
 -------------------------------------------------------------------
 
-kiwiLang/src/kiwiLang/Unreal/UEConfig.cpp
-kiwiLang/src/kiwiLang/Unreal/UETypes.cpp
-kiwiLang/src/kiwiLang/Unreal/UEIntegration.cpp
-kiwiLang/src/kiwiLang/Unreal/Bindings/UClassBinding.cpp
-kiwiLang/src/kiwiLang/Unreal/Bindings/UFunctionBinding.cpp
-kiwiLang/src/kiwiLang/Unreal/Bindings/UPropertyBinding.cpp
-kiwiLang/src/kiwiLang/Unreal/Bindings/UObjectRegistry.cpp
-kiwiLang/src/kiwiLang/Unreal/Integration/UEProjectBuilder.cpp
-kiwiLang/src/kiwiLang/Unreal/Integration/UEModuleLoader.cpp
-kiwiLang/src/kiwiLang/Unreal/Integration/UEEditorIntegration.cpp
-kiwiLang/src/kiwiLang/Unreal/Types/UETypeConverter.cpp
-kiwiLang/src/kiwiLang/Unreal/Types/UETypeSystem.cpp
-kiwiLang/src/kiwiLang/Unreal/Types/UEBlueprintTypes.cpp
-kiwiLang/src/kiwiLang/Unreal/CodeGen/UECodeGenerator.cpp
-kiwiLang/src/kiwiLang/Unreal/CodeGen/UENativeStubs.cpp
-kiwiLang/src/kiwiLang/Unreal/CodeGen/UEHeaderGenerator.cpp
-kiwiLang/src/kiwiLang/Unreal/Runtime/UERuntime.cpp
-kiwiLang/src/kiwiLang/Unreal/Runtime/UEGarbageCollector.cpp
-kiwiLang/src/kiwiLang/Unreal/Runtime/UEObjectWrapper.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/UEConfig.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/UETypes.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/UEIntegration.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UClassBinding.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UFunctionBinding.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UPropertyBinding.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Bindings/UObjectRegistry.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Integration/UEProjectBuilder.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Integration/UEModuleLoader.cpp
+[x] kiwiLang/src/kiwiLang/Unreal/Integration/UEEditorIntegration.cpp

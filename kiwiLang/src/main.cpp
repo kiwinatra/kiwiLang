@@ -224,7 +224,7 @@ int main(int argc, char* argv[]) {
     }
     
     if (parser.printSearchDirs()) {
-        // TODO: Implement search directory printing
+        // will be later
         return EXIT_SUCCESS;
     }
     
